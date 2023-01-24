@@ -177,50 +177,29 @@ import requests
 import pandas as pd
 import numpy as np
 import sqlite3 as sqlite
+import os
 
 #大部分正确但极少数不适用，还是分开写比较合适
 #m = re.search(r'/(?P<year>(20)?[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])?/(t(?P<all>20\d{6})_)?', url)
 
-#https://www.guancha.cn/SongLuZheng/2017_08_31_425112.shtml
-#https://view.inews.qq.com/k/20220310A04PC100?web_channel=wap&openApp=false
-#https://view.inews.qq.com/a/NEW2021051000405401?uid=&devid=60968872-C4D0-4028-B806-4AFE70C19325&qimei=60968872-c4d0-4028-b806-4afe70c19325
-
-#http://ln.ifeng.com/news/detail_2015_01/03/3368692_0.shtml
-#http://qd.ifeng.com/sd/detail_2014_08/21/2800454_0.shtml
-
-#http://www.xinhuanet.com/politics/2018lh/zb/20180317a/?baike
-
-#http://www.xinhuanet.com/talking/20170510a/
-
-#https://new.qq.com/rain/a/20210307A01FUW00
-
-#https://view.inews.qq.com/a/NEW2017080800730005 这个是坏链接
-
-#https://view.inews.qq.com/k/20210726A06WGG00?web_channel=wap&openApp=false
-#https://www.guancha.cn/internation/2020_04_28_548511.shtml
-
 def get_pubtime_by_url(url):
     m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
     m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[/-_]?(?P<month>[0-1][0-9])[/-_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url) #如/2018/0324/
-    #m2 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])/', url) #如/2020-10/ 放弃没有日期的
     m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
     m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
     
-    if m3 == None and m1 == None:
-        date = ['None', 'None', 'None']
-        return date
     if m0:
         #print(m0.group())
-        date = m0.groupdict()['all'][:4]+ m0.groupdict()['all'][4:6], m0.groupdict()['all'][6:8]]
+        date = m0.groupdict()['all'][:4] +'-'+ m0.groupdict()['all'][4:6] +'-'+ m0.groupdict()['all'][6:8]
         return date
-    if m1:
-        date = [m1.groupdict()['year'], m1.groupdict()['month'], m1.groupdict()['date']]
+    elif m1:
+        date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
         return date
-    # if m2:
-    #     date = [m2.groupdict()['year'], m2.groupdict()['month'], 'None']
-    #     return date
-    if m3:
-        date = ['20'+m3.groupdict()['year'], m3.groupdict()['month'], m3.groupdict()['date']]
+    elif m2:
+        date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
+        return date
+    elif m3:
+        date = '20'+m3.groupdict()['year']+'-'+ m3.groupdict()['month']+'-'+ m3.groupdict()['date']
         return date
 
 df = pd.read_csv('citation+code.csv',index_col=('Unnamed: 0'))
@@ -231,16 +210,16 @@ for index, row in df.iterrows():
     url = row['origin_url']
     if pd.isna(url) == False:
         domain = urlparse(url).netloc
-        df.at[index, 'domain'] = domain
-        
+        df.at[index, 'domain'] = domain 
+
         urlpath = urlparse(url).path
         date = get_pubtime_by_url(urlpath)
         
-        df.at[index, 'url_time'] = str(date)
+        df.at[index, 'url_time'] = date
         
-        print(index, domain, date, date)
+        print(index, urlpath, date)
         
-df.to_csv("citation+code+resolve.csv",index=False)
+df.to_csv("citation+code+resolve.csv",index=True)
 
 conn3= sqlite.connect('citation+code+resolve.sqlite')
 df.to_sql('citation+code+resolve', conn3, index=True, if_exists = 'replace')
@@ -253,12 +232,88 @@ engine.say("本程序运行结束")
 engine.runAndWait()  # 等待语音播报完毕
 
 
-over_count = (df['url_time'] == "['None', 'None', 'None']").sum()
+over_count = df['url_time'].isna().sum()
 print('后面需要处理的时间个数为', over_count) #后面需要处理的超时等链接个数为 
 
+#%% 解析时间修正 20230124
+import re
+from urllib.parse import urlparse
+import requests
+import pandas as pd
+import numpy as np
+import sqlite3 as sqlite
+import os
+
+#大部分正确但极少数不适用，还是分开写比较合适
+#m = re.search(r'/(?P<year>(20)?[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])?/(t(?P<all>20\d{6})_)?', url)
+
+#https://www.guancha.cn/SongLuZheng/2017_08_31_425112.shtml
+#https://view.inews.qq.com/k/20220310A04PC100?web_channel=wap&openApp=false
+#https://view.inews.qq.com/a/NEW2021051000405401?uid=&devid=60968872-C4D0-4028-B806-4AFE70C19325&qimei=60968872-c4d0-4028-b806-4afe70c19325
+#http://ln.ifeng.com/news/detail_2015_01/03/3368692_0.shtml
+#http://qd.ifeng.com/sd/detail_2014_08/21/2800454_0.shtml
+#http://www.xinhuanet.com/politics/2018lh/zb/20180317a/?baike
+#http://www.xinhuanet.com/talking/20170510a/
+#https://new.qq.com/rain/a/20210307A01FUW00
+#https://view.inews.qq.com/a/NEW2017080800730005 这个是坏链接
+#https://view.inews.qq.com/k/20210726A06WGG00?web_channel=wap&openApp=false
+#https://www.guancha.cn/internation/2020_04_28_548511.shtml
+
+def get_pubtime_by_url(url):
+    m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
+    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[/-_]?(?P<month>[0-1][0-9])[/-_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url) #如/2018/0324/
+    #m2 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])/', url) #如/2020-10/ 放弃只有年月没有日期的
+    m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
+    m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
+    
+    if m0:
+        #print(m0.group())
+        date = m0.groupdict()['all'][:4] +'-'+ m0.groupdict()['all'][4:6] +'-'+ m0.groupdict()['all'][6:8]
+        return date
+    elif m1:
+        date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
+        return date
+    elif m2:
+        date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
+        return date
+    # if m2:
+    #     date = [m2.groupdict()['year'], m2.groupdict()['month'], 'None']
+    #     return date
+    elif m3:
+        date = '20'+m3.groupdict()['year']+'-'+ m3.groupdict()['month']+'-'+ m3.groupdict()['date']
+        return date
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
+
+df = pd.read_csv('citation+code.csv',index_col=('Unnamed: 0'))
 
 
+for index, row in df.iterrows():
+    url = row['origin_url']
+    if pd.isna(url) == False:
+        urlpath = urlparse(url).path
+        date = get_pubtime_by_url(urlpath)
+        
+        df.at[index, 'url_time'] = date
+        
+        print(index, urlpath, date)
+        
+      
+df.to_csv("citation+update-url-time.csv",index=True)
 
+conn3= sqlite.connect('citation+update-url-time.sqlite')
+df.to_sql('citation+code+resolve', conn3, index=True, if_exists = 'replace')
+conn3.close()
+
+#语音播报结束
+import pyttsx3
+engine = pyttsx3.init()  # 创建engine并初始化
+engine.say("本程序运行结束")
+engine.runAndWait()  # 等待语音播报完毕
+
+
+over_count = df['url_time'].isna().sum()
+print('后面需要处理的时间个数为', over_count) #后面需要处理的超时等链接个数为 
 
 
 
