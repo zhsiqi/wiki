@@ -14,14 +14,20 @@ from bs4 import BeautifulSoup
 import nest_asyncio
 nest_asyncio.apply()
 
+import logging
+pyppeteer_level = logging.WARNING
+logging.getLogger('pyppeteer').setLevel(pyppeteer_level)
+logging.getLogger('websockets.protocol').setLevel(pyppeteer_level)
+pyppeteer_logger = logging.getLogger('pyppeteer')
+pyppeteer_logger.setLevel(logging.WARNING)
+
 async def pyppteer_fetchUrl(url):
-    browser = await launch({'headless': False,'dumpio':True, 'autoClose':True, 'args':['--window-size={1200},{1200}']})
+    browser = await launch({'headless': False,'dumpio':True, 'autoClose':True, 'args':['--window-size={600},{600}']})
     page = await browser.newPage()
-    await page.setViewport({'width': 1200, 'height': 1200})
+    await page.setViewport({'width': 600, 'height': 600})
+    await page.evaluateOnNewDocument('Object.defineProperty(navigator, "webdriver", {get: () => undefined})')
     await page.goto(url)
-    # element = await page.querySelector('div > div.fix-menu > div.date')
-    # ele = await (await element.getProperty('YYYY')).jsonValue()
-    # print(ele) #获取文本内容
+
 
     await asyncio.sleep(60)
     str = await page.content()
@@ -36,7 +42,7 @@ def fetchUrl(url):
 
 #%
 #gov.
-def getTitleUrl(html):
+def getdate(html):
     bsobj = BeautifulSoup(html,'html.parser')
     title = bsobj.find('div', attrs={"class":"tit"}).text
     date = bsobj.find('div', attrs={"class":"source"}).text
@@ -46,7 +52,8 @@ def getTitleUrl(html):
 
 if "__main__" == __name__: 
     s =fetchUrl('http://www.nhc.gov.cn/xcs/yqtb/202109/a24a8dca26c343e0a2a96461539f18b8.shtml')
-    getTitleUrl(s)
+    getdate(s)
+
 
 #%%
 
