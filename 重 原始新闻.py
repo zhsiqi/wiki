@@ -72,7 +72,7 @@ for index, row in df.iterrows():
             else:
                 df.at[index,'source'] = source[0]
                 df.at[index,'timestamp'] = timestamp[0]
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/百度百家号新闻'
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/百度百家号新闻'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print('/', index, row['reference_title'], url)
             time.sleep(1.5)
@@ -92,7 +92,7 @@ for index, row in df.iterrows():
                 df.at[index,'timestamp'] = info[0][0:19]
                 m = re.search(r'来源: (?P<author>\S*)\n', info[0])
                 df.at[index,'source'] = m.groupdict()['author']
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/网易新闻'
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/网易新闻'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
@@ -111,7 +111,7 @@ for index, row in df.iterrows():
             else:
                 df.at[index,'source'] = '央视新闻客户端'
                 df.at[index,'timestamp'] = timestamp[0]
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/央视新闻客户端'
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/央视新闻客户端'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
@@ -130,7 +130,7 @@ for index, row in df.iterrows():
             else:
                 df.at[index,'source'] = '界面新闻'
                 df.at[index,'timestamp'] = timestamp[0]
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/界面新闻'
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/界面新闻'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
@@ -151,7 +151,7 @@ for index, row in df.iterrows():
                 else:
                     df.at[index,'timestamp'] = timestamp[0]
                     df.at[index,'source'] = source[0]
-                filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/凤凰网'
+                filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/凤凰网'
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
@@ -172,7 +172,7 @@ for index, row in df.iterrows():
                     eles = box[0].split('\n')
                     df.at[index,'timestamp'] = eles[1]
                     df.at[index,'source'] = eles[0]
-                filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/澎湃网'
+                filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/澎湃网'
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
@@ -244,6 +244,7 @@ for index, row in df.iterrows():
             try:
                 browser.get(url.strip())
                 wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'infomation')))
+                time.sleep(2)
                 box = get_elements(browser, By.CLASS_NAME, 'infomation')
                 
             except TimeoutException:
@@ -253,23 +254,21 @@ for index, row in df.iterrows():
                 print(index, '元素不存在',url)
                 continue
             else:
-                timestamp = box[0].split('\n')[1]
-                source = box[0].split('\n')[0]
-                if '|' in source:
-                    realsource = source[:source.index('|')].strip()
-                else:
-                    realsource = source
-                df.at[index,'source'] = realsource
-                df.at[index,'timestamp'] = timestamp
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/北京日报客户端'
+                timestamp = re.search(r'^(?P<time>20.+)$',box[0],flags=re.MULTILINE)
+                source = re.search(r'^(?P<source>\S+?)\s',box[0])
+                df.at[index,'source'] = source.groupdict()['source']
+                df.at[index,'timestamp'] = timestamp.groupdict()['time']
+                
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/北京日报客户端'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
-            print('/', index, row['reference_title'], url)
+            print(index, row['reference_title'], url)
             time.sleep(1.5)
             
         elif dmname == 'mbd.baidu.com' and '200' in row['status_code'] and 'newspage/data/error?' not in url:
             try:
                 browser.get(url.strip())
                 wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, '_10s4U')))
+                time.sleep(2)
                 timestamp = get_elements(browser, By.CLASS_NAME, '_10s4U')
                 source = get_elements(browser, By.CLASS_NAME, '_7y5nA')
                 source1 = get_elements(browser, By.CLASS_NAME, '_2JgKg')
@@ -285,15 +284,16 @@ for index, row in df.iterrows():
                     df.at[index,'source'] = source[0]
                 if source1:
                     df.at[index,'source'] = source1[0]
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/百度百家号pc新闻'
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/百度百家号pc新闻'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
-            print('/', index, row['reference_title'], url)
+            print(index, row['reference_title'], url)
             time.sleep(1.5)
         
         elif dmname == 'mp.weixin.qq.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
                 wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'rich_media_meta_nickname')))
+                time.sleep(2)
                 timestamp = get_elements(browser, By.ID, 'publish_time')
                 source = get_elements(browser, By.CLASS_NAME, 'rich_media_meta_nickname')
             except TimeoutException:
@@ -305,7 +305,7 @@ for index, row in df.iterrows():
             else:
                 df.at[index,'source'] = source[0]
                 df.at[index,'timestamp'] = timestamp[0]
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/微信公众号平台'
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/微信公众号平台'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
@@ -314,6 +314,7 @@ for index, row in df.iterrows():
             try:
                 browser.get(url.strip())
                 wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'div.head-info.normal-info')))
+                time.sleep(10) #这个网站老是有问题,感觉是抓得太快了
                 box = get_elements(browser, By.CSS_SELECTOR, 'div.head-info.normal-info')
                 source = get_elements(browser, By.CSS_SELECTOR, 'span.pr10.head-info-copyfrom')
             except TimeoutException:
@@ -323,10 +324,10 @@ for index, row in df.iterrows():
                 print(index, '元素不存在',url)
                 continue
             else:
-                ti = re.search(r'\n(?P<time>20.+)\n', box[0])
+                ti = re.search(r'\n(?P<time>20.+)$', box[0],flags=re.MULTILINE)
                 df.at[index,'source'] = source[0]
                 df.at[index,'timestamp'] = ti.groupdict()['time']
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码/人民日报客户端'
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/人民日报客户端'
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
@@ -337,7 +338,7 @@ for index, row in df.iterrows():
     
 browser.quit()
 
-os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码/百度百家号新闻')
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/百度百家号新闻')
 
 #写入csv & sql
 
@@ -347,11 +348,11 @@ conn3= sqlite.connect('citation+news-45.sqlite')
 df.to_sql('citation+news', conn3, index=True, if_exists = 'replace')
 conn3.close()
 
-#语音播报结束ß
-# import pyttsx3
-# engine = pyttsx3.init()  # 创建engine并初始化
-# engine.say("本程序运行结束")
-# engine.runAndWait()  # 等待语音播报完毕
+#语音播报结束
+import pyttsx3
+engine = pyttsx3.init()  # 创建engine并初始化
+engine.say("本程序运行结束")
+engine.runAndWait()  # 等待语音播报完毕
 
 
 
