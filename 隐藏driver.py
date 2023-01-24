@@ -50,8 +50,8 @@ def get_html(filepath, browser, title, entry, entryindex):
 
 
 driver = uc.Chrome()
-os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0117补充各渠道的时间等')
-df = pd.read_csv('citation+news-9-3.csv',index_col=('Unnamed: 0'))
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
+df = pd.read_csv('citation+news-nhc-1.csv',index_col=('Unnamed: 0'))
 
 for index, row in df.iterrows():
     url = row['origin_url']
@@ -94,7 +94,7 @@ driver.quit()
 #写入csv & sql
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
 
-df.index += 1
+df.index = df.index - 1
 df.to_csv("citation+news-nhc-2.csv", index=True)
 
 conn3= sqlite.connect('citation+news-nhc-2.sqlite')
