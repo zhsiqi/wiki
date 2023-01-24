@@ -422,7 +422,7 @@ for index, row in df.iterrows():
     if pd.isna(url) == False and row['url_time'] == "['None', 'None', 'None']" :
         #澎湃网元素修正 
         if dmname == 'www.thepaper.cn' and '200' in row['status_code']:
-            if not url == 'https://www.thepaper.cn/' and not '20' in row['timestamp']:
+            if not url == 'https://www.thepaper.cn/' and pd.isna(row['timestamp']) == False and not '20' in row['timestamp']:
                 try:
                     browser.get(url.strip())
                     wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'index_left__LfzyH')))
@@ -462,6 +462,7 @@ for index, row in df.iterrows():
             if '/newsDetail' in url:
                 try:
                     wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'index_left__LfzyH')))
+                    time.sleep(2)
                     box = get_elements(browser, By.CLASS_NAME, 'index_left__LfzyH')
                 except TimeoutException:
                     print(index, '超时',url)
@@ -493,6 +494,7 @@ for index, row in df.iterrows():
             if '/baijiahao' in url:
                 try:
                     wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,'div.info.link')))
+                    time.sleep(2)
                     box = get_elements(browser, By.CSS_SELECTOR,'div.info.link')
                 except TimeoutException:
                     print(index, '超时',url)
@@ -502,8 +504,9 @@ for index, row in df.iterrows():
                     continue
                 else:
                     ti = re.search(r'(?P<time>20.+)$', box[0])
-                    so = re.search(r'(?P<source>[：\u4e00-\u9fa5]+)\s', box[0])
+                    so = re.search(r'(?P<source>\S+)\s', box[0])
                     source = '澎湃号·'+ so.groupdict()['source'].strip()
+                    print(source)
                     df.at[index,'timestamp'] = ti.groupdict()['time']
                     df.at[index,'source'] = source
                 filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/澎湃网移动端'
@@ -512,7 +515,7 @@ for index, row in df.iterrows():
                 time.sleep(1.5)
         #界面新闻元素修正
         elif dmname == 'www.jiemian.com' and '200' in row['status_code']:
-            if not '20' in row['timestamp']:
+            if pd.isna(row['timestamp']) == False and not '20' in row['timestamp']:
                 try:
                     browser.get(url.strip())
                     wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR, 'span[data-article-publish-time]')))
