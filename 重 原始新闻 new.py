@@ -20,7 +20,6 @@ import selenium.common.exceptions
 from tenacity import retry, retry_if_exception_type, wait_fixed
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-#from selenium.webdriver.common.keys import Keys
 import pandas as pd
 import sqlite3 as sqlite
 import datetime
