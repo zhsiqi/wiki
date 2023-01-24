@@ -58,33 +58,35 @@ for index, row in df.iterrows():
     dmname = row['domain']
     title = row['reference_title']
     if pd.isna(url) == False and "nhc.gov" in dmname:#卫健委
+        if pd.isna(row['timestamp']) == True or row['timestamp'] == '超时错误': #这里挽回条件判断错误
         #用标题确定正确的URL
-        if ('最新' or '截至' in title) and ('/xcs/yqfkdt/' in url):
-            url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
-        elif '疫苗接种情' in title and '/jkj/s7915/' not in url:
-            url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
-        try:
-            driver.get(url.strip())
-            wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
-            time.sleep(10)
-            timestamp = get_elements(driver, By.CLASS_NAME, 'source')
-        except TimeoutException:
-            df.at[index,'timestamp'] = '超时错误'
-            print(index, '超时',url)
-            continue
-        except NoSuchElementException:
-            df.at[index,'timestamp'] = '元素不存在错误'
-            print(index, '元素不存在',url)
-            continue
-        else:
-            ti = re.search(r'(?P<time>20\S+)',timestamp[0])
-            df.at[index,'source'] = '卫健委官网'
-            df.at[index,'timestamp'] = ti.groupdict()['time']
-        
-        filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
-        get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
-        print(index, row['reference_title'], url)
-        time.sleep(1.5)
+            qks = ['最新', '截至']
+            if any(qk in title for qk in qks) and '/xcs/yqfkdt/' in url:
+                url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
+            elif '疫苗接种情' in title and '/jkj/s7915/' not in url:
+                url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
+            try:
+                driver.get(url.strip())
+                wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
+                time.sleep(10) #感觉这个等待和停顿的时间是不是短了
+                timestamp = get_elements(driver, By.CLASS_NAME, 'source')
+            except TimeoutException:
+                df.at[index,'timestamp'] = '超时错误'
+                print(index, '超时',url)
+                continue
+            except NoSuchElementException:
+                df.at[index,'timestamp'] = '元素不存在错误'
+                print(index, '元素不存在',url)
+                continue
+            else:
+                ti = re.search(r'(?P<time>20\S+)',timestamp[0])
+                df.at[index,'source'] = '卫健委官网'
+                df.at[index,'timestamp'] = ti.groupdict()['time']
+            
+            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
+            get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
+            print(index, row['reference_title'], url)
+            time.sleep(1.5)
 
 
 driver.quit()
@@ -93,9 +95,9 @@ driver.quit()
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
 
 df.index += 1
-df.to_csv("citation+news-nhc.csv", index=True)
+df.to_csv("citation+news-nhc-2.csv", index=True)
 
-conn3= sqlite.connect('citation+news-nhc.sqlite')
+conn3= sqlite.connect('citation+news-nhc-2.sqlite')
 df.to_sql('citation+news', conn3, index=True, if_exists = 'replace')
 conn3.close()
 
