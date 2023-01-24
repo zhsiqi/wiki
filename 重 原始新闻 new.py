@@ -171,8 +171,7 @@ for index, row in df.iterrows():
                     continue
                 else:
                     ti = re.search(r'(?P<time>20[0-9-]{8}\s[0-9:]{5})', box[0],flags=re.MULTILINE)
-                    #so = re.search(r'^(?P<source>[\u4e00-\u9fa5].+)\n',box[0]) 感觉这个有问题，只能提取中文
-                    so = re.search(r'^(?P<source>\S+)\n',box[0]) 
+                    so = re.search(r'^(?P<source>\S+)\n',box[0]) #注意这里不能只用[\u4e00-\u9fa5]提取中文，因为来源的名字可能有@等
                     ly = re.search(r'来源：(?P<laiyuan>.+(\n)?.+)',box[0],flags=re.MULTILINE)
 
                     df.at[index,'timestamp'] = ti.groupdict()['time']
@@ -253,7 +252,6 @@ def get_html(filepath, browser, title, entry, entryindex):
 browser = webdriver.Chrome(executable_path = 'chromedriver')
 
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表')
-
 df = pd.read_csv('citation+news-100.csv', index_col=('Unnamed: 0'))
 
 for index, row in df.iterrows():
@@ -438,7 +436,7 @@ for index, row in df.iterrows():
                     continue
                 else:
                     ti = re.search(r'(?P<time>20[0-9-]{8}\s[0-9:]{5})', box[0],flags=re.MULTILINE)
-                    so = re.search(r'^(?P<source>[\u4e00-\u9fa5].+)\n',box[0])
+                    so = re.search(r'^(?P<source>\S+)\n',box[0]) #这里不能只有中文，好多名字里面有什么@或者引号
                     ly = re.search(r'来源：(?P<laiyuan>.+(\n)?.+)',box[0],flags=re.MULTILINE)
 
                     df.at[index,'timestamp'] = ti.groupdict()['time']
@@ -475,7 +473,7 @@ for index, row in df.iterrows():
                     continue
                 else:
                     ti = re.search(r'(?P<time>20[0-9-]{8}\s[0-9:]{5})', box[0],flags=re.MULTILINE)
-                    so = re.search(r'^(?P<source>[\u4e00-\u9fa5].+)\n',box[0])
+                    so = re.search(r'^(?P<source>\S+)\n',box[0])
                     ly = re.search(r'来源：(?P<laiyuan>.+(\n)?.+)',box[0],flags=re.MULTILINE)
                     df.at[index,'timestamp'] = ti.groupdict()['time']
                     if so:
