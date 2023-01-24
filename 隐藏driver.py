@@ -63,28 +63,28 @@ for index, row in df.iterrows():
             url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
         elif '疫苗接种情' in title and '/jkj/s7915/' not in url:
             url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
-            try:
-                driver.get(url.strip())
-                wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
-                time.sleep(10)
-                timestamp = get_elements(driver, By.CLASS_NAME, 'source')
-            except TimeoutException:
-                df.at[index,'timestamp'] = '超时错误'
-                print(index, '超时',url)
-                continue
-            except NoSuchElementException:
-                df.at[index,'timestamp'] = '元素不存在错误'
-                print(index, '元素不存在',url)
-                continue
-            else:
-                ti = re.search(r'(?P<time>20\S+)',timestamp[0])
-                df.at[index,'source'] = '卫健委官网'
-                df.at[index,'timestamp'] = ti.groupdict()['time']
-            
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
-            get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
-            print(index, row['reference_title'], url)
-            time.sleep(1.5)
+        try:
+            driver.get(url.strip())
+            wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
+            time.sleep(10)
+            timestamp = get_elements(driver, By.CLASS_NAME, 'source')
+        except TimeoutException:
+            df.at[index,'timestamp'] = '超时错误'
+            print(index, '超时',url)
+            continue
+        except NoSuchElementException:
+            df.at[index,'timestamp'] = '元素不存在错误'
+            print(index, '元素不存在',url)
+            continue
+        else:
+            ti = re.search(r'(?P<time>20\S+)',timestamp[0])
+            df.at[index,'source'] = '卫健委官网'
+            df.at[index,'timestamp'] = ti.groupdict()['time']
+        
+        filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
+        get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
+        print(index, row['reference_title'], url)
+        time.sleep(1.5)
 
 
 driver.quit()
