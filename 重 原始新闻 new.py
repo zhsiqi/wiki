@@ -57,6 +57,7 @@ for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     if pd.isna(url) == False and row['url_time'] == "['None', 'None', 'None']" :
+        #百度百家号
         if dmname == 'baijiahao.baidu.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -76,7 +77,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-            
+        #网易163    
         elif dmname == 'www.163.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -134,7 +135,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        
+        #凤凰网
         elif dmname == 'news.ifeng.com' and '200' in row['status_code']:
             if not url == 'https://news.ifeng.com/' and 'https://news.ifeng.com/c/404' not in url:
                 try:
@@ -170,7 +171,8 @@ for index, row in df.iterrows():
                     continue
                 else:
                     ti = re.search(r'(?P<time>20[0-9-]{8}\s[0-9:]{5})', box[0],flags=re.MULTILINE)
-                    so = re.search(r'^(?P<source>[\u4e00-\u9fa5].+)\n',box[0])
+                    #so = re.search(r'^(?P<source>[\u4e00-\u9fa5].+)\n',box[0]) 感觉这个有问题，只能提取中文
+                    so = re.search(r'^(?P<source>\S+)\n',box[0]) 
                     ly = re.search(r'来源：(?P<laiyuan>.+(\n)?.+)',box[0],flags=re.MULTILINE)
 
                     df.at[index,'timestamp'] = ti.groupdict()['time']
@@ -252,12 +254,13 @@ browser = webdriver.Chrome(executable_path = 'chromedriver')
 
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表')
 
-df = pd.read_csv('citation+news-45-2.csv', index_col=('Unnamed: 0'))
+df = pd.read_csv('citation+news-100.csv', index_col=('Unnamed: 0'))
 
 for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     if pd.isna(url) == False and row['url_time'] == "['None', 'None', 'None']" :
+        #北京日报客户端
         if dmname == 'bj.bjd.com.cn' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -280,7 +283,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-            
+        #百度百家号pc新闻    
         elif dmname == 'mbd.baidu.com' and '200' in row['status_code'] and 'newspage/data/error?' not in url:
             try:
                 browser.get(url.strip())
@@ -305,7 +308,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        
+        #微信公众号平台
         elif dmname == 'mp.weixin.qq.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -326,7 +329,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        
+        #人民日报客户端
         elif dmname == 'wap.peopleapp.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -361,9 +364,9 @@ os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表'
 
 #写入csv & sql
 
-df.to_csv("citation+news-45-3.csv", index=True)
+df.to_csv("citation+news-45.csv", index=True)
 
-conn3= sqlite.connect('citation+news-45-3.sqlite')
+conn3= sqlite.connect('citation+news-45.sqlite')
 df.to_sql('citation+news', conn3, index=True, if_exists = 'replace')
 conn3.close()
 
