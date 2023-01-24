@@ -23,49 +23,57 @@ import sqlite3 as sqlite5
 
 def get_pubtime_by_url(url):
     m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
-    m1 = re.search(r'/(?P<year>20[0-2][0-9])[/-_]?(?P<month>[0-1]?[0-9])[/-_]?(?P<date>[0-3]?[0-9])[/_]', url) #如2018/0324
-    m2 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])/', url) #如2020-10
-    m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
+    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url)
+    #m1 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如2018/0324
+    #m2 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])/', url) #如2020-10
+    m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1][0-9])[/-]?(?P<date>[0-3][0-9])/', url) #如/12/11-22/
     
-    if m3 == None and m2 == None and m1 == None:
-        date = None
-        return date
+    if m1:
+        date = {'year':m1.groupdict()['year'], 'month':m1.groupdict()['month'], 'date':m1.groupdict()['date']}
+        #print()
+        return date, 'm1匹配'
     if m0:
         #print(m0.group())
         date = {'year':m0.groupdict()['all'][:4], 'month':m0.groupdict()['all'][4:6], 'date':m0.groupdict()['all'][6:8]}
-        return date
-    if m1:
-        date = {'year':m1.groupdict()['year'], 'month':m1.groupdict()['month'], 'date':m1.groupdict()['date']}
-        return date
-    if m2:
-        date = {'year':m2.groupdict()['year'], 'month':m2.groupdict()['month'], 'date':None}
-        return date
+        #print('m0匹配')
+        return date, 'm0匹配'
     if m3:
         date = {'year':'20'+m3.groupdict()['year'], 'month':m3.groupdict()['month'], 'date':m3.groupdict()['date']}
-        return date
-
-# url0 = 'https://www.chinacdc.cn/jkzt/crb/zl/szkb_11803/jszl_11809/202212/t20221225_263104.html'
-# url1 = 'http://news.xinhuanet.com/2011-04/22/c_121336202.htm'
-# url2 = 'https://news.haiwainet.cn/n/2022/0311/c3541093-32362152.html'
-# url3 = 'http://news.xinhuanet.com/politics/2012-03/03/c_111596840.htm'
-# url4 = 'http://henan.163.com/12/0810/10/88HQPPG20227019U.html'
-# url5 = 'http://henan.163.com/2019/03-12/test.html'
-# url6 = 'http://henan.163.com/2019-03-31/test.html'
-# url7 = 'https://xian.qq.com/a/20110310/000409.htm'
-# url8 = 'https://wjw.fujian.gov.cn/ztzl/gzbufk/yqtb/202205/t20220528_5921301.htm'
-# url9 = 'http://www.gongyishibao.com/News/2011-7/139342.aspx'
+        #print('m3匹配')
+        return date, 'm3匹配'
+    if m3 == None and m1 == None and m0 == None:
+        date = None
+        #print('都不匹配')
+        return date, '都不匹配'
+    
+    
 
 
-# print(get_pubtime_by_url(url0))
-# print(get_pubtime_by_url(url1))
-# print(get_pubtime_by_url(url2))
-# print(get_pubtime_by_url(url3))
-# print(get_pubtime_by_url(url4))
-# print(get_pubtime_by_url(url5))
-# print(get_pubtime_by_url(url6))
-# print(get_pubtime_by_url(url7))
-# print(get_pubtime_by_url(url8))
-# print(get_pubtime_by_url(url9))
+
+
+url0 = 'https://www.chinacdc.cn/jkzt/crb/zl/szkb_11803/jszl_11809/202212/t20221225_263104.html'
+url1 = 'http://news.xinhuanet.com/2011-04/22/c_121336202.htm' #bug
+url2 = 'https://news.haiwainet.cn/n/2022/0311/c3541093-32362152.html'
+url3 = 'http://news.xinhuanet.com/politics/2012-03/03/c_111596840.htm' #bug
+url4 = 'http://henan.163.com/12/0810/10/88HQPPG20227019U.html'
+url5 = 'http://henan.163.com/2019/03-12/test.html' #bug
+url6 = 'http://henan.163.com/2019-03-31/test.html' #bug
+url7 = 'https://xian.qq.com/a/20110310/000409.htm'
+url8 = 'https://wjw.fujian.gov.cn/ztzl/gzbufk/yqtb/202205/t20220528_5921301.htm'
+url9 = 'http://www.gongyishibao.com/News/2011-7/139342.aspx'
+url10 = 'https://ent.sina.com.cn/s/m/2021-01-19/doc-ikftssan8334372.shtml'
+
+print(get_pubtime_by_url(url0))
+print(get_pubtime_by_url(url1))
+print(get_pubtime_by_url(url2))
+print(get_pubtime_by_url(url3))
+print(get_pubtime_by_url(url4))
+print(get_pubtime_by_url(url5))
+print(get_pubtime_by_url(url6))
+print(get_pubtime_by_url(url7))
+print(get_pubtime_by_url(url8))
+print(get_pubtime_by_url(url9))
+print(get_pubtime_by_url(url10))
 
 
 
