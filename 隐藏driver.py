@@ -51,42 +51,45 @@ def get_html(filepath, browser, title, entry, entryindex):
 
 driver = uc.Chrome()
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
-df = pd.read_csv('citation+news-nhc-1.csv',index_col=('Unnamed: 0'))
+df = pd.read_csv('citation+news-nhc-2.csv',index_col=('Unnamed: 0'))
 
+#替换错误URL值
+df = df.replace({'origin_url':'http://d6181c548b615eb9441.shtmlwww.nhc.gov.cn/xcs/yqfkdt/202204/311452e077aa4'},\
+                'http://www.nhc.gov.cn/jkj/s7915/202204/311452e077aa4d6181c548b615eb9441.shtml')
+   
 for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     title = row['reference_title']
-    if pd.isna(url) == False and "nhc.gov" in dmname:#卫健委
-        if pd.isna(row['timestamp']) == True or row['timestamp'] == '超时错误': #这里挽回条件判断错误
+    if pd.isna(url) == False and "nhc.gov" in dmname and pd.isna(row['timestamp']) == True:#卫健委
         #用标题确定正确的URL
-            qks = ['最新', '截至']
-            if any(qk in title for qk in qks) and '/xcs/yqfkdt/' in url:
-                url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
-            elif '疫苗接种情' in title and '/jkj/s7915/' not in url:
-                url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
-            try:
-                driver.get(url.strip())
-                wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
-                time.sleep(10) #感觉这个等待和停顿的时间是不是短了
-                timestamp = get_elements(driver, By.CLASS_NAME, 'source')
-            except TimeoutException:
-                df.at[index,'timestamp'] = '超时错误'
-                print(index, '超时',url)
-                continue
-            except NoSuchElementException:
-                df.at[index,'timestamp'] = '元素不存在错误'
-                print(index, '元素不存在',url)
-                continue
-            else:
-                ti = re.search(r'(?P<time>20\S+)',timestamp[0])
-                df.at[index,'source'] = '卫健委官网'
-                df.at[index,'timestamp'] = ti.groupdict()['time']
-            
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
-            get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
-            print(index, row['reference_title'], url)
-            time.sleep(1.5)
+        qks = ['最新', '截至']
+        if any(qk in title for qk in qks) and '/xcs/yqfkdt/' in url:
+            url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
+        elif '疫苗接种情' in title and '/jkj/s7915/' not in url:
+            url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
+        try:
+            driver.get(url.strip())
+            wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
+            time.sleep(10) #感觉这个等待和停顿的时间是不是短了
+            timestamp = get_elements(driver, By.CLASS_NAME, 'source')
+        except TimeoutException:
+            df.at[index,'timestamp'] = '超时错误'
+            print(index, '超时',url)
+            continue
+        except NoSuchElementException:
+            df.at[index,'timestamp'] = '元素不存在错误'
+            print(index, '元素不存在',url)
+            continue
+        else:
+            ti = re.search(r'(?P<time>20\S+)',timestamp[0])
+            df.at[index,'source'] = '卫健委官网'
+            df.at[index,'timestamp'] = ti.groupdict()['time']
+        
+        filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
+        get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
+        print(index, row['reference_title'], url)
+        time.sleep(1.5)
 
 
 driver.quit()
@@ -94,10 +97,9 @@ driver.quit()
 #写入csv & sql
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
 
-df.index = df.index - 1
-df.to_csv("citation+news-nhc-2.csv", index=True)
+df.to_csv("citation+news-nhc-3.csv", index=True)
 
-conn3= sqlite.connect('citation+news-nhc-2.sqlite')
+conn3= sqlite.connect('citation+news-nhc-3.sqlite')
 df.to_sql('citation+news', conn3, index=True, if_exists = 'replace')
 conn3.close()
 

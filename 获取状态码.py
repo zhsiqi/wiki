@@ -178,27 +178,47 @@ import pandas as pd
 import numpy as np
 import sqlite3 as sqlite
 
+#大部分正确但极少数不适用，还是分开写比较合适
+#m = re.search(r'/(?P<year>(20)?[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])?/(t(?P<all>20\d{6})_)?', url)
+
 #https://www.guancha.cn/SongLuZheng/2017_08_31_425112.shtml
+#https://view.inews.qq.com/k/20220310A04PC100?web_channel=wap&openApp=false
+#https://view.inews.qq.com/a/NEW2021051000405401?uid=&devid=60968872-C4D0-4028-B806-4AFE70C19325&qimei=60968872-c4d0-4028-b806-4afe70c19325
+
+#http://ln.ifeng.com/news/detail_2015_01/03/3368692_0.shtml
+#http://qd.ifeng.com/sd/detail_2014_08/21/2800454_0.shtml
+
+#http://www.xinhuanet.com/politics/2018lh/zb/20180317a/?baike
+
+#http://www.xinhuanet.com/talking/20170510a/
+
+#https://new.qq.com/rain/a/20210307A01FUW00
+
+#https://view.inews.qq.com/a/NEW2017080800730005 这个是坏链接
+
+#https://view.inews.qq.com/k/20210726A06WGG00?web_channel=wap&openApp=false
+#https://www.guancha.cn/internation/2020_04_28_548511.shtml
 
 def get_pubtime_by_url(url):
     m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
-    m1 = re.search(r'/(?P<year>20[0-2][0-9])[/-_]?(?P<month>[0-1]?[0-9])[/-_]?(?P<date>[0-3]?[0-9])[/_]', url) #如/2018/0324/
-    m2 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])/', url) #如/2020-10/
+    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[/-_]?(?P<month>[0-1][0-9])[/-_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url) #如/2018/0324/
+    #m2 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])/', url) #如/2020-10/ 放弃没有日期的
+    m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
     m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
     
-    if m3 == None and m2 == None and m1 == None:
+    if m3 == None and m1 == None:
         date = ['None', 'None', 'None']
         return date
     if m0:
         #print(m0.group())
-        date = [m0.groupdict()['all'][:4], m0.groupdict()['all'][4:6], m0.groupdict()['all'][6:8]]
+        date = m0.groupdict()['all'][:4]+ m0.groupdict()['all'][4:6], m0.groupdict()['all'][6:8]]
         return date
     if m1:
         date = [m1.groupdict()['year'], m1.groupdict()['month'], m1.groupdict()['date']]
         return date
-    if m2:
-        date = [m2.groupdict()['year'], m2.groupdict()['month'], 'None']
-        return date
+    # if m2:
+    #     date = [m2.groupdict()['year'], m2.groupdict()['month'], 'None']
+    #     return date
     if m3:
         date = ['20'+m3.groupdict()['year'], m3.groupdict()['month'], m3.groupdict()['date']]
         return date
@@ -236,37 +256,7 @@ engine.runAndWait()  # 等待语音播报完毕
 over_count = (df['url_time'] == "['None', 'None', 'None']").sum()
 print('后面需要处理的时间个数为', over_count) #后面需要处理的超时等链接个数为 
 
-#%% 【百家号】时间、保存html、作者、
-import re
-from urllib.parse import urlparse
-import requests
-import pandas as pd
-import numpy as np
-import sqlite3 as sqlite
 
-
-写成一个函数
-
-df = pd.read_csv(,index_col='Unnamed: 0')
-
-def get_news_elements(url, domain):
-
-    if row['domain'] = 'paper 乱七八糟':
-        time_element = 
-        source_element = 
-        save html
-    if row['domain'] = 'statis 乱七八糟':
-        elementmethod = 
-
-
-
-for index, row in df.interrows():
-    if row['status_code'] == 200:
-        
-
-
-
-584+425+419+199+130+111+73+67+65+62+45+40+37+24+21=2302
 
 
 
