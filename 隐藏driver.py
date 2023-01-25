@@ -4,6 +4,7 @@
 Created on Wed Jan 18 20:13:20 2023
 
 @author: zhangsiqi
+抓取卫健委网站文章的时间和html
 """
 from os import path
 import os
@@ -53,7 +54,7 @@ driver = uc.Chrome()
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
 df = pd.read_csv('citation+news-nhc-2.csv',index_col=('Unnamed: 0'))
 
-#替换错误URL值
+#手动替换错误URL值
 df = df.replace({'origin_url':'http://d6181c548b615eb9441.shtmlwww.nhc.gov.cn/xcs/yqfkdt/202204/311452e077aa4'},\
                 'http://www.nhc.gov.cn/jkj/s7915/202204/311452e077aa4d6181c548b615eb9441.shtml')
    
