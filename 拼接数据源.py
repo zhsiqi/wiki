@@ -19,7 +19,7 @@ os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/
 df = pd.read_csv('citation+news-nhc-6.csv',index_col='Unnamed: 0')
 
 #%% status_code 修正
-/404
+
 
 
 
