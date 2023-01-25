@@ -52,7 +52,7 @@ def get_html(filepath, browser, title, entry, entryindex):
 
 driver = uc.Chrome()
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
-df = pd.read_csv('citation+news-nhc-3.csv',index_col=('Unnamed: 0'))
+df = pd.read_csv('citation+news-nhc-4.csv',index_col=('Unnamed: 0'))
 
 #手动替换错误URL值
 df = df.replace({'origin_url':'http://d6181c548b615eb9441.shtmlwww.nhc.gov.cn/xcs/yqfkdt/202204/311452e077aa4'},\
@@ -70,11 +70,14 @@ for index, row in df.iterrows():
         qks = ['最新', '截至']
         if any(qk in title for qk in qks) and '/xcs/yqfkdt/' in url:
             url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
+            df.at[index,'origin_url'] = url #替换原始url为正确的
         elif '疫苗接种情' in title and '/xcs/yqfkdt/' in url:
             if index < 5917: #卫健委的URL规则在20221109号又变了，在表中的索引是5917
                 url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
+                df.at[index,'origin_url'] = url #替换原始url为正确的
             else:
                 url = re.sub('/xcs/yqfkdt/', '/xcs/yqjzqk/', url)
+                df.at[index,'origin_url'] = url #替换原始url为正确的
         try:
             driver.get(url.strip())
             wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
@@ -104,9 +107,9 @@ driver.quit()
 #写入csv & sql
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
 
-df.to_csv("citation+news-nhc-4.csv", index=True)
+df.to_csv("citation+news-nhc-5.csv", index=True)
 
-conn3= sqlite.connect('citation+news-nhc-4.sqlite')
+conn3= sqlite.connect('citation+news-nhc-5.sqlite')
 df.to_sql('citation+news', conn3, index=True, if_exists = 'replace')
 conn3.close()
 
