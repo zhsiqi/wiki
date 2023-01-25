@@ -328,6 +328,7 @@ import sqlite3 as sqlite
 import os
 from htmldate import find_date
 
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
 
 df = pd.read_csv('citation+news-nhc-6.csv',index_col=('Unnamed: 0'))
 df['htmldate_ori'] = ''
@@ -384,6 +385,8 @@ for index, row in df.iterrows():
             df.at[index, 'htmldate_ori'] = date
             df.at[index, 'htmldate_upd'] = date1
             print(index,url,date)
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0125补充htmldate时间')
 
 df.to_csv("citation+html2date.csv",index=True)
 
