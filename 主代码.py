@@ -15,15 +15,10 @@ from os import path
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-# from selenium.webdriver import ActionChains
-# from selenium.common.exceptions import NoSuchElementException
-# from selenium.common.exceptions import UnexpectedAlertPresentException
 from selenium.common.exceptions import StaleElementReferenceException
-# import selenium.common.exceptions
 from tenacity import retry, retry_if_exception_type, wait_fixed
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-#from selenium.webdriver.common.keys import Keys
 import pandas as pd
 import re
 import sqlite3 as sqlite
@@ -85,10 +80,10 @@ def get_elements(driver, method, name):
     #print('获取元素成功')
     return [i.text for i in targets]
 
-#%%爬虫循环开始
+#%% 爬虫循环开始
 browser = webdriver.Chrome(executable_path = 'chromedriver')
 
-#%%事件表单第一部分
+#%% 事件表单第一部分
 #根据词条网址获取网页内容
 #for index, row in evtable.iterrows():
 for index, row in evtable.iterrows():
@@ -120,7 +115,7 @@ for index, row in evtable.iterrows():
         editcount = sidebox[0].find_element(By.CSS_SELECTOR,'dd:nth-child(2) > ul > li:nth-child(2)').text[5:][:-5]#编辑次数
     else:
         viewcount = -99 #浏览量
-        editurl = 'NA' #编辑历史的链接
+        editurl = None #编辑历史的链接
         editcount = -99 #编辑次数
     
     #一级目录 
@@ -133,7 +128,7 @@ for index, row in evtable.iterrows():
     tocs_li = [toc.text for toc in tocs if toc.text]
     tocstext = '\n'.join(tocs_li)
     
-#%%突出贡献表单
+#%% 突出贡献表单
     topeditors = browser.find_elements(By.CSS_SELECTOR,'div.side-content > dl > dd.description.excellent-description > ul > li')
     if topeditors:
         for editor in topeditors:
@@ -148,7 +143,7 @@ for index, row in evtable.iterrows():
             conn.commit()
     print('突出贡献表单done')
         
-#%%文字内容表单
+#%% 文字内容表单
     #paras = browser.find_elements(By.CSS_SELECTOR,'div.para')
     # titles = browser.find_elements(By.XPATH,'//*[@class="title-text"]') #这个是所有的次级标题，但是多了两个【分享你的世界】
     # for title in titles:
@@ -206,23 +201,17 @@ for index, row in evtable.iterrows():
             ref_index = ref.find_element(By.CLASS_NAME,'index').text #参考资料序号
             reference_text = ref.text[5:] #参考资料所有文字
             
-            if '．20' in reference_text:
-                source_timeli = re.findall(r'．20[0-9-]{8}', reference_text) #这个7位和8位时间可以精简代码
-                if source_timeli:
-                    source_time = source_timeli[0][1:] #参考资料日期
-                else:
-                    source_timeli1 = re.findall(r'．20[0-9-]{7}', reference_text)
-                    if source_timeli1:
-                        source_time = source_timeli1[0][1:]
-                    else:
-                        source_time = 'Error'
+            #参考资料源日期
+            ti = re.search(r'(?<!引用日期)．(?P<y>20[0-2][0-9])[-年\.](?P<m>[0-1]?[0-9])[-月\.](?P<d>[0-3]?[0-9])[日\.\[\s]?', reference_text)
+            if ti:
+                source_time = ti.groupdict()['y']+'-'+ti.groupdict()['m']+'-'+ti.groupdict()['d']
             else:
-                source_time = 'NA'
-            
+                source_time = None
+            #引用日期
             if '[引用日期' in reference_text:
-                cite_time = reference_text[-11:-1] #引用日期
+                cite_time = reference_text[-11:-1] 
             else:
-                cite_time = 'NA'
+                cite_time = None
             
             ref_title = ref.find_element(By.CLASS_NAME,'text').text.strip('．') #参考资料标题
             ref_url = ref.find_element(By.CLASS_NAME,'text').get_attribute('href')#百科的参考资料页面的链接
@@ -233,7 +222,7 @@ for index, row in evtable.iterrows():
                 if ref_site:
                     reference_site = ref_site[0].text.strip('．')
                 else:
-                    reference_site = 'NA'
+                    reference_site = None
                     
                 ref_link = ref_links[0]
                 ref_link.click() #点击参考资料链接，打开新标签页
@@ -243,24 +232,24 @@ for index, row in evtable.iterrows():
                 if origins:
                     origilink = origins[0].text
                 else:
-                    origilink = 'NA'
+                    origilink = None
                 snapshot_urls = browser.find_elements(By.CLASS_NAME,'snapshot')#参考资料的快照截图链接列表
                 if snapshot_urls:
                     snapshot_url = snapshot_urls[0].get_attribute('src')
                 else:
-                    snapshot_url = 'NA'
+                    snapshot_url = None
                 browser.close() #关闭标签页
                 browser.switch_to.window(original_window) #回到原初的百科页面
                 time.sleep(1)
             else:
-                reference_site = 'NA'
-                snapshot_url = 'NA'
-                redirlink = 'NA'
-                origilink = 'NA'
+                reference_site = None
+                snapshot_url = None
+                redirlink = None
+                origilink = None
 
             #写入sql参考资料表单
             ref_values = (index + 1, event_id, eventname, year, entryname, len(references), ref_index, reference_text, ref_title, ref_url,
-                          reference_site, source_time, cite_time, redirlink, origilink, 'NA', snapshot_url,
+                          reference_site, source_time, cite_time, redirlink, origilink, None, snapshot_url,
                           datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             c.execute(''' INSERT INTO citations VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', ref_values)
             conn.commit()
@@ -349,22 +338,22 @@ for index, row in evtable.iterrows():
             if sci_author:
                 sciauthor = sci_author[0].text[:-1]
             else:
-                sciauthor = 'NA'
+                sciauthor = None
             sci_title = sci.find_elements(By.CSS_SELECTOR,'span.interrupt.title')
             if sci_title:
                 scititle = sci_title[0].text[:-1]
             else:
-                scititle = 'NA'
+                scititle = None
             sci_journal = sci.find_elements(By.CSS_SELECTOR,'span.interrupt.publishedAt')
             if sci_journal:
                 scijournal = sci_journal[0].text
             else:
-                scijournal = 'NA'
+                scijournal = None
             sci_year = sci.find_elements(By.CSS_SELECTOR,'span.interrupt.time')
             if sci_year:
                 sciyear = sci_year[0].text
             else:
-                sciyear = 'NA'
+                sciyear = None
             sci_link = sci.find_element(By.CSS_SELECTOR,'a.text-link').get_attribute('href')
             #写入sql
             sci_values = (index + 1, event_id, eventname, year, entryname, len(sciences), sci_index, sciauthor, scititle, scijournal, 
