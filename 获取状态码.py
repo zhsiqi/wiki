@@ -329,11 +329,11 @@ import os
 from htmldate import find_date
 
 
-df = pd.read_csv('citation+news-9-3.csv',index_col=('Unnamed: 0'))
+df = pd.read_csv('citation+news-nhc-6.csv',index_col=('Unnamed: 0'))
 df['htmldate_ori'] = ''
 df['htmldate_upd'] = ''
+df['url_time'] = '' #之前得到的时间删除，重新解析时间
 
-import re
 def get_pubtime_by_url(url): 
     m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
     m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url) #如/2018/0324/
@@ -385,9 +385,9 @@ for index, row in df.iterrows():
             df.at[index, 'htmldate_upd'] = date1
             print(index,url,date)
 
-df.to_csv("citation+test-htmldate2.csv",index=True)
+df.to_csv("citation+html2date.csv",index=True)
 
-conn3= sqlite.connect('citation+test-htmldate2.sqlite')
+conn3= sqlite.connect('citation+html2date.sqlite')
 df.to_sql('citation+htmldate', conn3, index=True, if_exists = 'replace')
 conn3.close()
     
