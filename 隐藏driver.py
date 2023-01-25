@@ -64,10 +64,10 @@ for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     title = row['reference_title']
-    if pd.isna(url) == False and "nhc.gov" in dmname and row['timestamp'] == '超时错误':#修正错误20230125
-    #if pd.isna(url) == False and "nhc.gov" in dmname and pd.isna(row['timestamp']) == True:#卫健委
-        #用标题确定正确的URL
-        qks = ['最新', '截至']
+    #if pd.isna(url) == False and "nhc.gov" in dmname and row['timestamp'] == '超时错误':#修正错误20230125
+    if pd.isna(url) == False and "nhc.gov" in dmname and pd.isna(row['timestamp']) == True:#卫健委
+        df.at[index,'source'] = '卫健委官网'
+        qks = ['最新', '截至'] #用标题确定正确的URL
         if any(qk in title for qk in qks) and '/xcs/yqfkdt/' in url:
             url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
             df.at[index,'origin_url'] = url #替换原始url为正确的
@@ -93,7 +93,6 @@ for index, row in df.iterrows():
             continue
         else:
             ti = re.search(r'(?P<time>20\S+)',timestamp[0])
-            df.at[index,'source'] = '卫健委官网'
             df.at[index,'timestamp'] = ti.groupdict()['time']
         
         filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
