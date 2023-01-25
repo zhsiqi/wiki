@@ -64,39 +64,39 @@ for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     title = row['reference_title']
-    if pd.isna(url) == False and "nhc.gov" in dmname and pd.isna(row['timestamp']) == True:#卫健委
-        if row['timestamp'] == '超时错误': #修正错误20230125
-            #用标题确定正确的URL
-            qks = ['最新', '截至']
-            if any(qk in title for qk in qks) and '/xcs/yqfkdt/' in url:
-                url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
-            elif '疫苗接种情' in title and '/xcs/yqfkdt/' in url:
-                if index < 5917: #卫健委的URL规则在20221109号又变了，在表中的索引是5917
-                    url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
-                else:
-                    url = re.sub('/xcs/yqfkdt/', '/xcs/yqjzqk/', url)
-            try:
-                driver.get(url.strip())
-                wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
-                time.sleep(10) #感觉这个等待和停顿的时间是不是短了
-                timestamp = get_elements(driver, By.CLASS_NAME, 'source')
-            except TimeoutException:
-                df.at[index,'timestamp'] = '超时错误'
-                print(index, '超时',url)
-                continue
-            except NoSuchElementException:
-                df.at[index,'timestamp'] = '元素不存在错误'
-                print(index, '元素不存在',url)
-                continue
+    if pd.isna(url) == False and "nhc.gov" in dmname and row['timestamp'] == '超时错误':#修正错误20230125
+    #if pd.isna(url) == False and "nhc.gov" in dmname and pd.isna(row['timestamp']) == True:#卫健委
+        #用标题确定正确的URL
+        qks = ['最新', '截至']
+        if any(qk in title for qk in qks) and '/xcs/yqfkdt/' in url:
+            url = re.sub('/xcs/yqfkdt/', '/xcs/yqtb/', url)
+        elif '疫苗接种情' in title and '/xcs/yqfkdt/' in url:
+            if index < 5917: #卫健委的URL规则在20221109号又变了，在表中的索引是5917
+                url = re.sub('/xcs/yqfkdt/', '/jkj/s7915/', url)
             else:
-                ti = re.search(r'(?P<time>20\S+)',timestamp[0])
-                df.at[index,'source'] = '卫健委官网'
-                df.at[index,'timestamp'] = ti.groupdict()['time']
-            
-            filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
-            get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
-            print(index, row['reference_title'], url)
-            time.sleep(1.5)
+                url = re.sub('/xcs/yqfkdt/', '/xcs/yqjzqk/', url)
+        try:
+            driver.get(url.strip())
+            wait = WebDriverWait(driver, 30, 0.5).until(EC.presence_of_element_located((By.CLASS_NAME, 'source')))
+            time.sleep(10) #感觉这个等待和停顿的时间是不是短了
+            timestamp = get_elements(driver, By.CLASS_NAME, 'source')
+        except TimeoutException:
+            df.at[index,'timestamp'] = '超时错误'
+            print(index, '超时',url)
+            continue
+        except NoSuchElementException:
+            df.at[index,'timestamp'] = '元素不存在错误'
+            print(index, '元素不存在',url)
+            continue
+        else:
+            ti = re.search(r'(?P<time>20\S+)',timestamp[0])
+            df.at[index,'source'] = '卫健委官网'
+            df.at[index,'timestamp'] = ti.groupdict()['time']
+        
+        filepath = '/Users/zhangsiqi/Desktop/毕业论文代码mini/卫健委网站'
+        get_html(filepath, driver, row['reference_title'], row['entry'], row['reference_entryindex'])
+        print(index, row['reference_title'], url)
+        time.sleep(1.5)
 
 
 driver.quit()
