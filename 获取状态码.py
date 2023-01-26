@@ -184,9 +184,12 @@ import os
 
 def get_pubtime_by_url(url):
     m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
-    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url) #如/2018/0324/
-    m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
+    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_]', url) #如/2018/0324/
+    #m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
+    m2 = re.search(r'view\.inews\.qq\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url)
     m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
+    m4 = re.search(r'xinhuanet\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url)
+    
     
     if m1:
         date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
@@ -201,9 +204,11 @@ def get_pubtime_by_url(url):
     if m3:
         date = '20'+m3.groupdict()['year']+'-'+ m3.groupdict()['month']+'-'+ m3.groupdict()['date']
         return date
-    if m1 == None and m0 == None and m2 == None and m3 == None:
-        date = None
+    if m4:
+        date = m4.groupdict()['year']+'-'+ m4.groupdict()['month']+'-'+ m4.groupdict()['date']
         return date
+    if m1 == None and m0 == None and m2 == None and m3 == None and m4 == None:
+        return None
     
 
 df = pd.read_csv('citation+code.csv',index_col=('Unnamed: 0'))
@@ -216,9 +221,7 @@ for index, row in df.iterrows():
         domain = urlparse(url).netloc
         df.at[index, 'domain'] = domain 
 
-        
-        date = get_pubtime_by_url(url)
-        
+        date = get_pubtime_by_url(url) #不能用urlpath来提取日期，因为urlpath不完整
         df.at[index, 'url_time'] = date
         
         print(index, url, date)
@@ -265,9 +268,11 @@ import os
 
 def get_pubtime_by_url(url):    
     m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
-    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url) #如/2018/0324/
-    m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
+    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_]', url) #如/2018/0324/
+    #m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
+    m2 = re.search(r'view\.inews\.qq\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url)
     m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
+    m4 = re.search(r'xinhuanet\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url)
     
     if m1:
         date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
@@ -282,14 +287,15 @@ def get_pubtime_by_url(url):
     if m3:
         date = '20'+m3.groupdict()['year']+'-'+ m3.groupdict()['month']+'-'+ m3.groupdict()['date']
         return date
-    if m1 == None and m0 == None and m2 == None and m3 == None:
-        date = None
+    if m4:
+        date = m4.groupdict()['year']+'-'+ m4.groupdict()['month']+'-'+ m4.groupdict()['date']
         return date
+    if m1 == None and m0 == None and m2 == None and m3 == None and m4 == None:
+        return None
 
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
 
 df = pd.read_csv('citation+code.csv',index_col=('Unnamed: 0'))
-
 
 for index, row in df.iterrows():
     url = row['origin_url']
@@ -301,7 +307,6 @@ for index, row in df.iterrows():
         
         print(index, url, date)
         
-      
 df.to_csv("citation+update-url-time.csv",index=True)
 
 conn3= sqlite.connect('citation+update-url-time.sqlite')
@@ -318,7 +323,7 @@ engine.runAndWait()  # 等待语音播报完毕
 over_count = df['url_time'].isna().sum()
 print('后面需要处理的时间个数为', over_count) #后面需要处理的超时等链接个数为 
 
-#%% 测试htmldate模块
+#%% htmldate模块取时间
 import re
 from urllib.parse import urlparse
 import requests
@@ -359,9 +364,6 @@ def get_pubtime_by_url(url):
         date = None
         return date
 
-url = 'https://ent.sina.com.cn/s/m/2021-01-19/doc-ikftssan8334372.shtml'
-print(get_pubtime_by_url(url))
-
 for index, row in df.iterrows():
     url = row['origin_url']
     if pd.isna(url) == False:
@@ -395,7 +397,73 @@ df.to_csv("citation+html2date.csv",index=True)
 conn3= sqlite.connect('citation+html2date.sqlite')
 df.to_sql('citation+htmldate', conn3, index=True, if_exists = 'replace')
 conn3.close()
+
+#%%修正URL时间解析错误 20230126，之前为了容错/20190829af20结果引入了/20190836af67的噪音
+import re
+from urllib.parse import urlparse
+import requests
+import pandas as pd
+import numpy as np
+import sqlite3 as sqlite
+import os
+
+def get_pubtime_by_url(url):    
+    m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
+    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_]', url) #如/2018/0324/
+    m2 = re.search(r'view\.inews\.qq\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
+    m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
+    m4 = re.search(r'xinhuanet\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url)
+    m5 = re.search(r'/(?P<year>20[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-](?P<date>[0-3]?[0-9])/', url) #/art/2021/5/26/art
     
+    if m1:
+        date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
+        return date
+    if m0:
+        #print(m0.group())
+        date = m0.groupdict()['all'][:4] +'-'+ m0.groupdict()['all'][4:6] +'-'+ m0.groupdict()['all'][6:8]
+        return date
+    if m2:
+        date = m2.groupdict()['year']+'-'+ m2.groupdict()['month']+'-'+ m2.groupdict()['date']
+        return date
+    if m3:
+        date = '20'+m3.groupdict()['year']+'-'+ m3.groupdict()['month']+'-'+ m3.groupdict()['date']
+        return date
+    if m4:
+        date = m4.groupdict()['year']+'-'+ m4.groupdict()['month']+'-'+ m4.groupdict()['date']
+        return date
+    if m5:
+        date = m5.groupdict()['year']+'-'+ m5.groupdict()['month']+'-'+ m5.groupdict()['date']
+        print(url, date)
+        return date
+    if m0 == None and m1 == None and m2 == None and m3 == None and m4 == None and m5 == None:
+        return None
+
+#print(get_pubtime_by_url('http://www.haishu.gov.cn/art/2021/5/26/art_1229100495_58940958.html'))
+
+os.chdir('/Volumes/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0125修正百科source时间提取错误')
+
+df = pd.read_csv('citation+html2date-修正soti.csv',index_col=('Unnamed: 0'))
+
+for index, row in df.iterrows():
+    url = row['origin_url']
+    if pd.isna(url) == False:
+        
+        date = get_pubtime_by_url(url) #不能用urlpath因为得到的urlpath并不完整
+        df.at[index, 'url_time'] = date
+        
+        print(index, url, date)
+
+os.chdir('/Volumes/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0216修正regex解析URL时间错误')
+
+df.to_csv("citation+ht2t+updateurlti.csv",index=True)
+
+conn3= sqlite.connect('citation+ht2t+updateurlti.sqlite')
+df.to_sql('citation', conn3, index=True, if_exists = 'replace')
+conn3.close()    
+
+
+
+
 
 #%%
 testtext = """2008年中国南方雪灾是指自2008年1月3日起在中国发生的大范围低温、雨雪、冰冻等自然灾害。中国的上海、江苏、浙江、安徽、江西、河南、湖北、湖南、广东、广西、重庆、四川、贵州、云南、陕西、甘肃、青海、宁夏、新疆等20个省（区、市）均不同程度受到低温、雨雪、冰冻灾害影响。截至2月24日，因灾死亡129人，失踪4人，紧急转移安置166万人；农作物受灾面积1.78亿亩，成灾8764万亩，绝收2536万亩；倒塌房屋48.5万间，损坏房屋168.6万间；因灾直接经济损失1516.5亿元人民币。森林受损面积近2.79亿亩，3万只国家重点保护野生动物在雪灾中冻死或冻伤；受灾人口已超过1亿。其中安徽、江西、湖北、湖南、广西、四川和贵州等7个省份受灾最为严重。
