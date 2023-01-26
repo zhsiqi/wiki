@@ -9,10 +9,7 @@ Created on Mon Jan 16 16:35:04 2023
 """
 import re
 from urllib.parse import urlparse
-import requests
 import pandas as pd
-import numpy as np
-import sqlite3 as sqlite5
 
 #大部分正确但极个别不适用，还是分开写比较合适
 #m = re.search(r'/(?P<year>(20)?[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])?/(t(?P<all>20\d{6})_)?', url)
@@ -21,32 +18,46 @@ import sqlite3 as sqlite5
 #https://view.inews.qq.com/k/20220310A04PC100?web_channel=wap&openApp=false
 #https://view.inews.qq.com/a/NEW2021051000405401?uid=&devid=60968872-C4D0-4028-B806-4AFE70C19325&qimei=60968872-c4d0-4028-b806-4afe70c19325
 
-def get_pubtime_by_url(url):
+
+#https://www.guancha.cn/SongLuZheng/2017_08_31_425112.shtml
+#https://view.inews.qq.com/k/20220310A04PC100?web_channel=wap&openApp=false
+#https://view.inews.qq.com/a/NEW2021051000405401?uid=&devid=60968872-C4D0-4028-B806-4AFE70C19325&qimei=60968872-c4d0-4028-b806-4afe70c19325
+#http://ln.ifeng.com/news/detail_2015_01/03/3368692_0.shtml
+#http://qd.ifeng.com/sd/detail_2014_08/21/2800454_0.shtml
+#http://www.xinhuanet.com/politics/2018lh/zb/20180317a/?baike
+#http://www.xinhuanet.com/talking/20170510a/
+#https://new.qq.com/rain/a/20210307A01FUW00
+#https://view.inews.qq.com/a/NEW2017080800730005 这个是坏链接
+#https://view.inews.qq.com/k/20210726A06WGG00?web_channel=wap&openApp=false
+#https://www.guancha.cn/internation/2020_04_28_548511.shtml
+    
+def get_pubtime_by_url(url):    
     m0 = re.search(r'/t(?P<all>20\d{6})_', url) #如/t20150324_
-    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_a-zA-Z]', url)
-    #m1 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如2018/0324
-    #m2 = re.search(r'/(?P<year>20[0-2][0-9])[/-]?(?P<month>[0-1]?[0-9])/', url) #如2020-10
-    m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1][0-9])[/-]?(?P<date>[0-3][0-9])/', url) #如/12/11-22/
+    m1 = re.search(r'[/_](?P<year>20[0-2][0-9])[-/_]?(?P<month>[0-1][0-9])[-/_]?(?P<date>[0-3][0-9])[/_]', url) #如/2018/0324/
+    #m2 = re.search(r'/NEW(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url) #如https://view.inews.qq.com/a/NEW2019082900295010?uid=
+    m2 = re.search(r'view\.inews\.qq\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url)
+    m3 = re.search(r'/(?P<year>[0-2][0-9])[/-](?P<month>[0-1]?[0-9])[/-]?(?P<date>[0-3]?[0-9])/', url) #如/12/11-22/
+    m4 = re.search(r'xinhuanet\.com/\S+(?P<year>20[0-2][0-9])(?P<month>[0-1][0-9])(?P<date>[0-3][0-9])', url)
+    
     
     if m1:
-        date = {'year':m1.groupdict()['year'], 'month':m1.groupdict()['month'], 'date':m1.groupdict()['date']}
-        #print()
+        date = m1.groupdict()['year']+'-'+ m1.groupdict()['month']+'-'+ m1.groupdict()['date']
         return date, 'm1匹配'
     if m0:
         #print(m0.group())
-        date = {'year':m0.groupdict()['all'][:4], 'month':m0.groupdict()['all'][4:6], 'date':m0.groupdict()['all'][6:8]}
-        #print('m0匹配')
+        date = m0.groupdict()['all'][:4] +'-'+ m0.groupdict()['all'][4:6] +'-'+ m0.groupdict()['all'][6:8]
         return date, 'm0匹配'
+    if m2:
+        date = m2.groupdict()['year']+'-'+ m2.groupdict()['month']+'-'+ m2.groupdict()['date']
+        return date, 'm2匹配'
     if m3:
-        date = {'year':'20'+m3.groupdict()['year'], 'month':m3.groupdict()['month'], 'date':m3.groupdict()['date']}
-        #print('m3匹配')
+        date = '20'+m3.groupdict()['year']+'-'+ m3.groupdict()['month']+'-'+ m3.groupdict()['date']
         return date, 'm3匹配'
-    if m3 == None and m1 == None and m0 == None:
-        date = None
-        #print('都不匹配')
-        return date, '都不匹配'
-    
-    
+    if m4:
+        date = m4.groupdict()['year']+'-'+ m4.groupdict()['month']+'-'+ m4.groupdict()['date']
+        return date, 'm4匹配'
+    if m1 == None and m0 == None and m2 == None and m3 == None and m4 == None:
+        return None, '都不匹配'
 
 
 
@@ -62,6 +73,9 @@ url7 = 'https://xian.qq.com/a/20110310/000409.htm'
 url8 = 'https://wjw.fujian.gov.cn/ztzl/gzbufk/yqtb/202205/t20220528_5921301.htm'
 url9 = 'http://www.gongyishibao.com/News/2011-7/139342.aspx'
 url10 = 'https://ent.sina.com.cn/s/m/2021-01-19/doc-ikftssan8334372.shtml'
+url11 = 'http://www.xinhuanet.com/talking/20170510a/'
+url12 = 'https://view.inews.qq.com/k/20220310A04PC100?web_channel=wap&openApp=false'
+url13 = 'https://view.inews.qq.com/a/NEW2021051000405401?uid=&devid=60968872-C4D0-4028-B806-4AFE70C19325&qimei=60968872-c4d0-4028-b806-4afe70c19325'
 
 print(get_pubtime_by_url(url0))
 print(get_pubtime_by_url(url1))
@@ -74,7 +88,9 @@ print(get_pubtime_by_url(url7))
 print(get_pubtime_by_url(url8))
 print(get_pubtime_by_url(url9))
 print(get_pubtime_by_url(url10))
-
+print(get_pubtime_by_url(url11))
+print(get_pubtime_by_url(url12))
+print(get_pubtime_by_url(url13))
 
 
 # domain
