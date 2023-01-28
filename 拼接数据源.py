@@ -41,8 +41,7 @@ df.to_sql('citation+news', conn3, index=True, if_exists = 'replace')
 conn3.close()
 
 print(df.isnull().sum())
-
-#%% 重叠不同源时间
+#%% 将手动补全pubtime的csv拼接到sqlite 20230128
 import pandas as pd
 import numpy as np
 import os
@@ -54,55 +53,102 @@ from dateutil.parser import parse
 from dateutil import rrule
 from dateutil import relativedelta
 
-os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0125修正百科source时间提取错误')
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0126修正regex解析URL时间错误')
+dfup = pd.read_csv('citation+ht2t+updateurlti.csv', index_col=0)
 
-df = pd.read_csv('citation+html2date-修正soti.csv', index_col='Unnamed: 0')
 
-#直接复制sourcetime到新列,然后将urltime不为空的值重叠到pubtime一列
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0127人工补齐sourcetime')
+df = pd.read_excel('补齐sourcetime.xlsx', index_col=0)
+print(df.isnull().sum())
 
+#逐列比较两个csv，然后合并变化部分
+df_di = dfup['reference_site'].compare(df['reference_site'])
+
+df['source_time'] = dfup['source_time']
+df['url_time'] = dfup['url_time']
+df['reference_url'] = dfup['reference_url']
+df['redir_url'] = dfup['redir_url']
+
+df.to_csv("handtimeall.csv", index=True)
+
+os.chdir('/Volumes/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0127补齐sourcetime')
+df.to_csv("handtimeall.csv", index=True)
+df.to_excel('handtimeall.xlsx',index=True)
+
+# source_time             dfup xn=新
+# reference_url           dfup xn
+# url_time                dfup xn
+# redir_url               dfup xn
+
+# reference_title         df xn 
+# reference_site          df xn
+# source                  df xn
+# cite_time               df xn
+# timestamp               df xn
+# htmldate_ori            df xn
+# htmldate_upd            df xn
+# status_code             df xn
+# badlink                 df APPEDND
+# handtime                df append
+
+#列的清理
+df['handtime'] = df['handtime'].replace(regex =['无法访问','NA'], value = pd.NaT) #日期的空值为NaT
+df['handtime'] = df['handtime'].replace(np.NaN, value = pd.NaT)
+df[['handtime']]= df[['handtime']].values.astype(str) #将数据类型转化为str
+df['handtime'] = pd.to_datetime(df['handtime']).dt.date #只保留【年-月-日】
+
+df['timestamp'] = df['timestamp'].replace(regex=['超时错误'], value = pd.NaT)
+df['handtime'] = df['handtime'].replace(regex =['无法访问', 'NA'], value = pd.NaT)
+df['htmldate_ori'] = df['htmldate_ori'].replace(regex=['error'], value = pd.NaT)
+df['htmldate_upd'] = df['htmldate_upd'].replace(regex=['error'], value = pd.NaT)
+
+#重叠不同源时间:直接复制sourcetime到新列,然后将urltime不为空的值重叠到pubtime一列
 df['pub_time'] = df['source_time']
-df['pub_time'] = df['pub_time'].combine_first(df['timestamp'])#手动抓的时间准确，先重叠他
-df['pub_time'] = df['pub_time'].combine_first(df['url_time'])
+df['pub_time'] = df['pub_time'].combine_first(df['handtime'])#先重叠手动记录的时间
+df['pub_time'] = df['pub_time'].combine_first(df['timestamp'])#再重叠爬虫抓的时间
+df['pub_time'] = df['pub_time'].combine_first(df['url_time'])#再重叠URL解析的时间
 
-
-df.to_csv("时间重叠.csv", index=True)
-
-conn3= sqlite.connect('时间重叠.sqlite')
-df.to_sql('citation', conn3, index=True, if_exists = 'replace')
-conn3.close()
+print(df.isnull().sum())
 
 #将数据类型转化为时间，统一时间格式为yyyy-mm-dd，然后用减法，
 
-df = pd.read_csv('时间重叠.csv', index_col='Unnamed: 0')
 #汉字替换为符号
+df[['pub_time']]= df[['pub_time']].values.astype(str) #将数据类型转化为str
 df['pub_time'] = df['pub_time'].replace(regex=['年', '月'], value='-')
 df['pub_time'] = df['pub_time'].replace(regex =[r'[\u4e00-\u9fa5]'], value='')
 
+conn = sqlite.connect('test2.sqlite')
+df.to_sql('citation', conn, index=True, if_exists = 'replace')
+conn.close() #我不理解怎么只到了这个步骤，英文日期自动变数字了？
 
-
-
-df['cite_time'] = pd.to_datetime(df['cite_time'],format="%y-%m-%d").dt.date
-df['pub_time'] = pd.to_datetime(df['pub_time'],format="%y-%m-%d").dt.date #只保留年月日
+df['cite_time'] = pd.to_datetime(df['cite_time']).dt.date
+df['pub_time'] = pd.to_datetime(df['pub_time']).dt.date #dt.date，只保留【年-月-日】
+df['source_time'] = pd.to_datetime(df['source_time']).dt.date
 
 df['time_di'] = df['cite_time'] - df['pub_time']
 df['time_di'] = df['time_di'].map(lambda x:x.days) #计算出天数
 
-df.to_csv("时间差.csv", index=True)
 
-conn3= sqlite.connect('时间差.sqlite')
-df.to_sql('citation', conn3, index=True, if_exists = 'replace')
-conn3.close()
+#将df写入 csv sql
 
+df.to_csv("citation.csv", index=True)
+df.to_excel('citation.xlsx',index=True)
 
-df['cite_time'] = pd.Timestamp(df['cite_time'])
-df['pub_time'] = pd.Timestamp(df['pub_time'])
-
-df['cite_time'] = pd.Timestamp(df['cite_time']).strftime('%Y-%m-%d')
-df['pub_time'] = pd.Timestamp(df['pub_time']).strftime('%Y-%m-%d')
+conn = sqlite.connect('BaiduWiki.sqlite')
+df.to_sql('citation', conn, index=True, if_exists = 'replace')
+conn.close()
 
 
 
-#卫健委网站的URL解析时间有错误：2021-01-39 https://baike.baidu.com/reference/55675125/6e16B9vcIp5btQnmhK-GH3nIWfIfyWY9kT9x2mm4z9IpB70ajvokxMWmoqWEF5fq3H-1Ey14pADQZx4T_WkTwoLmwOKhX5Q4B7l_rsDcUVdIVI2Lu60vbcCtbAU-uLlL6kJkmMNwPovI
+
+
+
+#%% 重叠不同源时间
+
+
+
+
+#[已修正]卫健委网站的URL解析时间有错误：2021-01-39 http://www.nhc.gov.cn/xcs/yqtb/202101/39d6c7fbeb8845009146df081038d877.shtml
 
 def date_di(start,end):
     di = pd.Timestamp(parse(end).strftime('%Y-%m-%d')) - pd.Timestamp(parse(start).strftime('%Y-%m-%d'))
