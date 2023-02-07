@@ -234,6 +234,7 @@ import pandas as pd
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情')
 conn= sqlite.connect('Wiki.sqlite')
 
+
 #将sqlite表单写入多张csv
 def sql2csv(table_name, sqldb):
     table = pd.read_sql_query('SELECT * FROM '+ table_name, sqldb)

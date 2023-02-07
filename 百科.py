@@ -226,7 +226,7 @@ for line in open("ComAdd.txt"):
             c.execute(''' INSERT INTO wikitext VALUES (?, ?, ?, ?, ?) ''', wikitext_values)
             conn.commit()
     print('文字内容表单done')
-#百科内链表单
+#%%百科内链表单
     wiki_links = browser.find_elements(By.CSS_SELECTOR, 'a[target="_blank"][href^="/item/"][data-log="summary"]')
     for wiki_link in wiki_links:
         # 写入sql
@@ -247,7 +247,7 @@ for line in open("ComAdd.txt"):
     link_count = len(wiki_links) + len(wikilinks)
     
     print('百科内链表单done')    
-#参考资料表单    
+#%%参考资料表单    
     #extract references 不能分开抓序号、标题这些，因为有些为空 
     references = browser.find_elements(By.CLASS_NAME, 'reference-item')
     #read_more_btn = browser.find_elements(By.XPATH,'/html/body/div[3]/div[2]/div/div[1]/dl/dd[2]/span[1]') #success
@@ -355,7 +355,7 @@ for line in open("ComAdd.txt"):
             conn.commit()
             #print('写入完毕')
     print('参考资料表单done')   
-#编辑历史表单
+#%%编辑历史表单
     editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
  
     for num in range(1,editpage_nos+1):

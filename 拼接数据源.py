@@ -139,10 +139,6 @@ df.to_sql('citation', conn, index=True, if_exists = 'replace')
 conn.close()
 
 
-
-
-
-
 #%% 重叠不同源时间
 
 
@@ -180,9 +176,11 @@ print(dif2)
 
 
 #%% cnOCR
+
+
 from cnocr import CnOcr
 
-img_fp = '/Users/zhangsiqi/Desktop/毕业论文代码mini/testrm.png'
+img_fp = '/Users/zhangsiqi/Desktop/毕业论文代码mini/test.png'
 ocr = CnOcr(det_model_name='naive_det')  # 所有参数都使用默认值
 out = ocr.ocr(img_fp)
 
