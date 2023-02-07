@@ -461,8 +461,130 @@ conn3= sqlite.connect('citation+ht2t+updateurlti.sqlite')
 df.to_sql('citation', conn3, index=True, if_exists = 'replace')
 conn3.close()    
 
+#%% 区块链窗口获取时间 2023-02-06
+import os
+import time
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver import ActionChains
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import UnexpectedAlertPresentException
+from selenium.common.exceptions import StaleElementReferenceException
+import selenium.common.exceptions
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from tenacity import retry, retry_if_exception_type, wait_fixed
+import re
+import sqlite3 as sqlite
+import math
+import pandas as pd
+import datetime
+import numpy as np
+
+# 连接sql数据库
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情')
+conn= sqlite.connect('Wiki.sqlite')
+
+dfev = pd.read_sql('SELECT * FROM events', conn, index_col='index')
+dfedi = pd.read_sql('SELECT * FROM edithistory', conn)
 
 
+conn.close()
+dfedi['edit_time']=pd.NaT
+#dfnew['edit_time']=pd.NaT
+
+# 定义一个捕捉元素时出现StaleElementReferenceException异常后重试的装饰器
+@retry(retry = retry_if_exception_type(StaleElementReferenceException), wait = wait_fixed(3))
+def get_elements(driver, method, name):
+    #print('尝试获取元素',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),name)
+    targets = driver.find_elements(method, name) #method =By.CLASS_NAME
+    #print('获取元素成功')
+    return [i.text for i in targets]
+
+# 定义一个捕捉元素时出现StaleElementReferenceException异常后重试的装饰器
+@retry(retry = retry_if_exception_type(StaleElementReferenceException), wait = wait_fixed(3))
+def click_elements(driver, method, name):
+    #print('尝试获取元素',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),name)
+    targets = driver.find_elements(method, name) #method =By.CLASS_NAME
+    #print('获取元素成功')
+    return [i for i in targets]
+
+browser = webdriver.Chrome(executable_path = 'chromedriver')
+original_window = browser.current_window_handle
+
+dfall_new = pd.DataFrame(columns=['entry','edit_entryindex','author_name', 'update_time','edit_time'])
+
+for index, row in dfev[24:50].iterrows():
+#for index, row in dfev[1:2].iterrows():
+    editurl = row['editurl']
+    editcount = row['editcount']
+    if editurl:
+        editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
+        #dfev_new = pd.DataFrame(columns=['entry','edit_entryindex','author_name','update_time','edit_time'])
+        
+        for num in range(1,editpage_nos+1):
+            time_new = []
+            histo_url = editurl + '#page' + str(num)
+            edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
+            browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
+            browser.switch_to.window(browser.window_handles[-1]) #切换窗口
+            time.sleep(2.5)
+            #一直等待到元素可见
+            wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'td')))
+            lst = get_elements(browser, By.TAG_NAME, 'td')
+            #print(lst)
+            dflist = [[25*(num-1)+j+1, lst[4*j+1],lst[4*j]] for j in range(0,int(len(lst)/4))]
+            dfli = pd.DataFrame(dflist)
+            dfli.rename(columns={0:'edit_entryindex',1:'author_name',2:'update_time'},inplace=True)
+            #print(dfli)
+            #----------打开区块链信息窗口抓取时间--------------
+            blockchains = click_elements(browser, By.LINK_TEXT, '查看') #寻找可点击的区块链查看窗口
+            for blockchain in blockchains:
+                blockchain.click()
+                time.sleep(3.5) #这个停顿一定需要，否则页面没有更新，定位元素会找不到
+                wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,
+                                                                                             'ul.hash-info > li:nth-child(3)')))
+                real_timeli = get_elements(browser, By.CSS_SELECTOR, 'ul.hash-info > li:nth-child(3)')
+                real_time = real_timeli[0][5:]
+                time_new.append(real_time)
+                
+                #------关闭打开的区块链窗口------
+                closewindow = click_elements(browser, By.CSS_SELECTOR, 'dl.wgt_dialog.modal.blockChain-dialog > dd.close.dialog-btn > em')[0]
+                browser.execute_script('arguments[0].click();', closewindow)
+            browser.close() #关闭当前的编辑历史标签页
+            browser.switch_to.window(original_window) #回到原初的百科页面
+            dfli['entry'] = row['entry']
+            dfli['edit_time'] = time_new
+            #-------合并同一词条下的所有编辑历史数据框------
+            #dfev_new = pd.concat([dfev_new, dfli],ignore_index=True, sort=False)#合并不保留原索引，启用新的自然索引：
+            dfall_new = pd.concat([dfall_new, dfli],ignore_index=True, sort=False)#合并不保留原索引，启用新的自然索引：
+        # dfev_new['entry'] = row['entry']
+        # dfev_new['edit_time'] = time_new
+        #-------合并不同词条下的所有编辑历史数据框------
+        #dfall_new = pd.concat([dfall_new,dfev_new],ignore_index=True, sort=False)#合并时不保留原索引，启用新的自然索引
+    time.sleep(2)
+
+browser.close() #关闭当前的编辑历史标签页
+browser.quit()
+
+dfall_new['update_time'] = pd.to_datetime(dfall_new['update_time'])
+dfall_new['edit_time'] = pd.to_datetime(dfall_new['edit_time'])
+#dfall_new['time_di'] = dfall_new['update_time'] - dfall_new['edit_time']
+#dfall_new['di_sec'] = df['time_di'].total_seconds()
+
+# df['a'] = df['a'].astype(str)
+# df['asplit'] = df['a'].str.split(':')
+#df['amins'] = df['asplit'].apply(lambda x: int(x[0])*60 + int(x[1]))
+
+# 创建sql数据库
+sqname = 'BaiduWiki['+ datetime.datetime.now().strftime('%m-%d-%H:%M].sqlite')
+conn= sqlite.connect(sqname)
+dfall_new.index += 1
+dfall_new.to_sql('edithis', conn, index=True, if_exists = 'replace')
+conn.close()
+
+dfall_new.to_csv('dfall_new-2.csv',index=True)
+dfall_new.to_excel('dfall_new-2.xlsx',index=True)
 
 
 #%%
@@ -471,6 +593,7 @@ testtext = """2008年中国南方雪灾是指自2008年1月3日起在中国发�
 北京：京呼航班全线延误首都机场因呼市突降大雪机场关闭，21日飞往呼和浩特共11趟航班全部延误，下午6时，所有航班的起飞时间都改在晚8时以后，但工作人员称，即使到了八点也不见得能够起飞。此外，北京飞往内蒙锡林浩特航班已经取消。铁路方面，北京西站候车大厅状况与往年春运期间无太多异常，未有旅客大面积滞留，大多列车可以准点出发，个别一两趟出现短时间晚点。
 湖北：死亡人数升至14人据统计，湖北省积雪天数已达10天，为24年来之首，因灾死亡人数上升至14人，直接经济损失超过14亿元人民币，而雨雪天气将持续至25日。受暴雪天气影响，湖北省内九条高速公路中有五条再次关闭，但京珠高速已恢复运行。省客运集团有关负责人介绍，迄今为止由武汉发往全国各地的长途客运班车已有8800余次停运。天河机场亦有20余航班延误。截至20日，武汉市公安交通管理局122交通指挥中心共接到交通报警13199起。另外，武汉市中心城区多处水管冻裂，许多居民出现用水困难。至20日上午9时，全市24小时内共接到投诉1904起，直接停水754起，供水管网21日共发生两起800毫米主干管爆裂事故。"""
 
+testtext = """2011年10月13日下午5点30分，广东佛山南海黄岐的广佛五金城里，2岁女童小悦悦在过马路时不慎被一辆面包车撞倒并两度碾压，随后肇事车辆逃逸，随后开来的另一辆车辆直接从已经被碾压过的女童身上再次开了过去，七分钟内在女童身边经过的十几个路人，都对此冷眼漠视，只有最后一名拾荒阿姨陈贤妹上前施以援手，由此引发网友广泛热议。2011年10月21日，小悦悦经医院全力抢救无效，于0时32分离世。2011年10月24日上午，广东佛山南海区检察院称已批准逮捕小悦悦碾压案嫌疑人。"""
 
 import re
 import chardet
@@ -481,33 +604,61 @@ from datetime import datetime,timedelta
 matchs = {
     1:(r'\d{4}%s\d{1,2}%s\d{1,2}%s \d{1,2}%s\d{1,2}%s\d{1,2}%s','%%Y%s%%m%s%%d%s %%H%s%%M%s%%S%s'),
     2:(r'\d{4}%s\d{1,2}%s\d{1,2}%s \d{1,2}%s\d{1,2}%s','%%Y%s%%m%s%%d%s %%H%s%%M%s'),
-    3:(r'\d{4}%s\d{1,2}%s\d{1,2}%s','%%Y%s%%m%s%%d%s'),
-    4:(r'\d{2}%s\d{1,2}%s\d{1,2}%s','%%y%s%%m%s%%d%s'),
+    3:(r'\d{4}%s\d{1,2}%s\d{1,2}%s \d{1,2}%s','%%Y%s%%m%s%%d%s %%H%s'),
+    4:(r'\d{4}%s\d{1,2}%s\d{1,2}%s','%%Y%s%%m%s%%d%s'),
+    5:(r'\d{2}%s\d{1,2}%s\d{1,2}%s','%%y%s%%m%s%%d%s'),
    
     # 没有年份
-    5:(r'\d{1,2}%s\d{1,2}%s \d{1,2}%s\d{1,2}%s\d{1,2}%s','%%m%s%%d%s %%H%s%%M%s%%S%s'),
-    6:(r'\d{1,2}%s\d{1,2}%s \d{1,2}%s\d{1,2}%s','%%m%s%%d%s %%H%s%%M%s'),
-    7:(r'\d{1,2}%s\d{1,2}%s','%%m%s%%d%s'),
-    
+    6:(r'\d{1,2}%s\d{1,2}%s \d{1,2}%s\d{1,2}%s\d{1,2}%s','%%m%s%%d%s %%H%s%%M%s%%S%s'),
+    7:(r'\d{1,2}%s\d{1,2}%s \d{1,2}%s\d{1,2}%s','%%m%s%%d%s %%H%s%%M%s'),
+    8:(r'\d{1,2}%s\d{1,2}%s \d{1,2}%s','%%m%s%%d%s %%H%s'),
+    9:(r'\d{1,2}%s\d{1,2}%s','%%m%s%%d%s'),
 
-    # 没有年月日
-    8:(r'\d{1,2}%s\d{1,2}%s\d{1,2}%s','%%H%s%%M%s%%S%s'),
-    9:(r'\d{1,2}%s\d{1,2}%s','%%H%s%%M%s'),
+    # 没有年和月，20日上午9时23分06秒，20日上午9时23分，20日上午9时,21日，
+    10:(r'\d{1,2}%s \d{1,2}%s\d{1,2}%s\d{1,2}%s','%%d%s %%H%s%%M%s%%S%s'), 
+    11:(r'\d{1,2}%s \d{1,2}%s\d{1,2}%s','%%d%s %%H%s%%M%s'),
+    12:(r'\d{1,2}%s \d{1,2}%s','%%d%s %%H%s'),
+    13:(r'\d{1,2}%s','%%d%s'),
+    
+    # # 没有年月日
+    # 14:(r'\d{1,2}%s\d{1,2}%s\d{1,2}%s','%%H%s%%M%s%%S%s'),
+    # 15:(r'\d{1,2}%s\d{1,2}%s','%%H%s%%M%s'),
 }
 
 # 正则中的%s分割
 splits = [
-    {1:[('年','月','日','点','分','秒'),('-','-','',':',':',''),('\/','\/','',':',':',''),('\.','\.','',':',':','')]},
-    {2:[('年','月','日','点','分'),('-','-','',':',''),('\/','\/','',':',''),('\.','\.','',':','')]},
-    {3:[('年','月','日'),('-','-',''),('\/','\/',''),('\.','\.','')]},
+    {1:[('年','月','日','时','分','秒'),('年','月','日','点','分','秒'),
+        ('年','月','日早上','时','分','秒'),('年','月','日早上','点','分','秒'),
+        ('年','月','日上午','时','分','秒'),('年','月','日上午','点','分','秒'),
+        ('年','月','日下午','时','分','秒'),('年','月','日下午','点','分','秒'),
+        ('年','月','日晚上','时','分','秒'),('年','月','日晚上','点','分','秒'),
+        ('年','月','日凌晨','时','分','秒'),('年','月','日凌晨','点','分','秒'),
+        ('年','月','日晚','时','分','秒'),('年','月','日晚','点','分','秒'),
+        ('-','-','',':',':',''),('\/','\/','',':',':',''),('\.','\.','',':',':','')]},
+    {2:[('年','月','日','时','分'),('年','月','日','点','分'),
+        ('年','月','日早上','时','分'),('年','月','日早上','点','分'),
+        ('年','月','日上午','时','分'),('年','月','日上午','点','分'),
+        ('年','月','日下午','时','分'),('年','月','日下午','点','分'),
+        ('年','月','日晚','时','分'),('年','月','日晚','点','分'),
+        ('年','月','日晚上','时','分'),('年','月','日晚上','点','分'),
+        ('年','月','日凌晨','时','分'),('年','月','日凌晨','点','分'),
+        ('-','-','',':',''),('\/','\/','',':',''),('\.','\.','',':','')]},
+    {3:[('年','月','日','时'),('年','月','日','点'),('-','-','',':'),('\/','\/','',':'),('\.','\.','',':')]},
     {4:[('年','月','日'),('-','-',''),('\/','\/',''),('\.','\.','')]},
+    {5:[('年','月','日'),('-','-',''),('\/','\/',''),('\.','\.','')]},
 
-    {5:[('月','日','点','分','秒'),('-','',':',':',''),('\/','',':',':',''),('\.','',':',':','')]},
-    {6:[('月','日','点','分'),('-','',':',''),('\/','',':',''),('\.','',':','')]},
-    {7:[('月','日'),('-',''),('\/',''),('\.','')]},
-
-    {8:[('点','分','秒'),(':',':','')]},
-    {9:[('点','分'),(':','')]},
+    {6:[('月','日','时','分','秒'),('月','日','点','分','秒'),('-','',':',':',''),('\/','',':',':',''),('\.','',':',':','')]},
+    {7:[('月','日','时','分'),('月','日','点','分'),('-','',':',''),('\/','',':',''),('\.','',':','')]},
+    {8:[('月','日','时'),('月','日','点'),('-','',':'),('\/','',':'),('\.','',':')]},
+    {9:[('月','日'),('-',''),('\/',''),('\.','')]},
+    
+    {10:[('日','时','分','秒'),('日','点','分','秒'),('',':',':','')]},
+    {11:[('日','时','分'),('日','点','分'),('',':','')]},
+    {12:[('日','时'),('日','点')]},
+    {13:[('日')]},
+    
+    # {14:[('点','分','秒'),(':',':','')]},
+    # {15:[('点','分'),(':','')]},
 ]
 
 def func(parten,tp):
@@ -597,7 +748,7 @@ class TimeFinder(object):
         return res
 
 def test():
-    timefinder = TimeFinder(base_date='2008-01-01 00:00:00')
+    timefinder = TimeFinder(base_date='2011-01-01 00:00:00')
     #or text in testtext:
     res = timefinder.find_time(testtext)
     #print('text----',testtext)
