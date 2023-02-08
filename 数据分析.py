@@ -342,6 +342,105 @@ conn.close()
     
 dfev.to_csv('events.csv',index=True)
 dfev.to_excel('events.xlsx',index=True)
+#%% csv连接数据：补充编辑历史的实际编辑时间 2023-02-08
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+import datetime
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0208补全编辑时间戳')
+
+dfev = pd.read_csv('eventssql.csv', index_col='Unnamed: 0')
+dfti = pd.read_csv('alleditime.csv', index_col='Unnamed: 0')
+
+#dfev['update_time'] = pd.to_datetime(dfev['update_time'])
+
+#屠呦呦 bug 因为爬取中断后直接从中间页面开始导致新抓取时实际抓取到的还是第一页的，所以25条编辑历史重复了 6292-6316
+dftu = pd.read_csv('tuyou.csv', index_col='Unnamed: 0')
+dftu['edit_entryindex']=range(126,151)
+dfti = dfti.drop(index=range(6292,6317))
+
+#替换掉重复的屠呦呦编辑历史
+df0 = dfti[:6292]
+df1 = dfti[6292:]
+dfti = pd.concat([df0,dftu,df1],ignore_index=True, sort=False)#合并不保留原索引，启用新的自然索引：
+#剔除2023.1.18及以后的编辑历史
+dfti['update_time'] = pd.to_datetime(dfti['update_time'])
+dfti['date'] = dfti['update_time'].dt.date
+dfti['baseline'] = datetime.datetime(2023,1,18)
+dfti = dfti[dfti['date']< dfti['baseline']]
+
+#把每个事件的编辑历史索引更正
+namelist = dfti['entry'].unique()
+
+#namelist = dfti['entry'].unique().tolist()
+dfti['edit_entryindex']=np.nan
+dfti['edit_count']=np.nan
+dfti['year']=None
+dfti['event']=None
+dfti['event_id']=None
+dfti['entryindex']=None
+
+for index, row in dfev.iterrows():
+    i = row['entry']
+    j = row['editcount']
+    length = len(dfti[dfti['entry']==i])
+    if length != j:
+        print(i, j, '新采集的',length, '编辑次数变了')
+    dfti.loc[dfti['entry']==i,'edit_entryindex'] = range(1,length+1)
+    dfti.loc[dfti['entry']==i,'edit_count'] = length
+    
+    dfti.loc[dfti['entry']==i,'year'] = row['year']
+    dfti.loc[dfti['entry']==i,'event'] = row['event']    
+    dfti.loc[dfti['entry']==i,'event_id'] = row['event_id']
+    dfti.loc[dfti['entry']==i,'entryindex'] = row['entryindex']
+    
+    # dfti.loc[dfti['entry']==i,'edit_entryindex'] = range(1,length+1) 死活想不明白为啥改成series就只能赋值第一个事件
+
+# conn= sqlite.connect('置换.sqlite')
+# dfti.to_sql('edit', conn, index=True, if_exists = 'replace')
+# conn.close()
+
+# dfti = dfti[['entry','edit_entryindex', 'update_time','author_name','edit_time']]
+# dfti['edit_entryindex']=dfti['edit_entryindex'].astype(np.int64)
+# dfap = pd.merge(df, dfti, how='left',on=['entry','update_time','author_name','edit_entryindex'])
+dfti.drop(['baseline','date','time_di'],inplace=True,axis=1)
+
+dfed = pd.read_csv('edithistorysql.csv', index_col='Unnamed: 0')
+dfed['update_time'] = pd.to_datetime(dfed['update_time'])
+dfed.year = dfed.year.astype('str')
+dfed.event_id = dfed.event_id.astype('str')
+dfed.edit_entryindex = dfed.edit_entryindex.astype('str')
+
+dfmis = dfed[4448:4449]
+dfmis['edit_time']=pd.NaT
+dfmis.loc[:,'edit_time'] = pd.to_datetime('2014-03-08 08:59:00') 
+
+#dfmis['edit_time']=pd.to_datetime('2014-03-08 08:59')
+
+#插入缺失值
+dfti.edit_count = dfti.edit_count.astype(int)
+dfti1 = dfti[:4448]
+dfti2 = dfti[4448:]
+dfti = pd.concat([dfti1,dfmis,dfti2],ignore_index=True, sort=False)#合并不保留原索引，启用新的自然索引：
+dfti.loc[dfti['entry']=='3·8马来西亚航班失踪事件','edit_count'] = 175
+
+#下面导出数据很无语，因为老是parameter不对，最后直接导出csv再导入csv为sql了
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0208补全编辑时间戳')
+dfti.to_csv('edittimeall.csv',index=True)
+
+df = pd.read_csv('edittimeall.csv',index_col='Unnamed: 0')
+df.index += 1
+# conn= sqlite.connect('edi+time.sqlite')
+# df.to_sql('edit+time', conn, index=True, if_exists = 'replace')
+# conn.close()
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情')
+
+conn= sqlite.connect('Wiki.sqlite')
+df.to_sql('edit_time', conn, index=True, if_exists = 'replace')
+conn.close()
 
 #%% 通过引用日期找到引用的具体的时间
 import pandas as pd
@@ -350,30 +449,103 @@ import os
 import sqlite3 as sqlite
 import re
 
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情')
 conn= sqlite.connect('Wiki.sqlite')
 
 dfev = pd.read_sql('SELECT * FROM events', conn, index_col='index')
 dfci = pd.read_sql('SELECT * FROM citation', conn)
-dfedi = pd.read_sql('SELECT * FROM edithistory', conn)
+dfedi = pd.read_sql('SELECT * FROM edit_time', conn,index_col='index')
 
 dfci['ci_timestamp'] = pd.NaT
 dfci['ci_time_count'] = np.nan
 
 for index, row in dfev.iterrows():
 #for index, row in dfev[20:21].iterrows():
-    dfci_ev = dfci.loc[dfci['entry'] == row['entry'],'cite_time'].dropna().unique() #去除空值后返回独特的引用日期
-    dfedi_ev = dfedi.loc[dfedi['entry'] == row['entry'],'update_time'] #v这个后面改为edit_time
-    for time in dfci_ev:
-        a = dfedi_ev[dfedi_ev.str.startswith(time)].tolist() #找到匹配的编辑时间
-        dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_timestamp'] = str(a)
-        dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_time_count'] = len(a)
-        #print(a)
+    #去除空值后返回独特的引用日期
+    if row['editcount'] > 0:
+        #下面两行都要去除序列里的空值
+        dfci_ev = dfci.loc[dfci['entry'] == row['entry'],'cite_time'].dropna().unique() 
+        dfedi_ev = dfedi.loc[dfedi['entry'] == row['entry'],'edit_time'].dropna()
+        for time in dfci_ev:
+            a = dfedi_ev[dfedi_ev.str.startswith(time)].tolist() #找到匹配的编辑时间
+            if a:#如果匹配上了
+                dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_timestamp'] = str(a)
+                dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_time_count'] = len(a)
+            else:
+                dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_timestamp'] = None
+                dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_time_count'] = np.nan
+            #print(a)
 
+dfci.to_sql('cittion_edtime', conn, index=False, if_exists = 'replace')    
 conn.close()
 
+#%% 画时间趋势图
+import pandas as pd 
+import numpy as np
+import matplotlib 
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
+from matplotlib.pyplot import MultipleLocator #设置坐标轴刻度
+from matplotlib.font_manager import *
+# import earthpy as et
+
+df = pd.read_csv("edithistorysql.csv", index_col='Unnamed: 0')
+dfev = pd.read_csv('eventssql.csv', index_col='Unnamed: 0')
+
+df['update_time'] = pd.to_datetime(df['update_time'])
+df['date'] = pd.to_datetime(df['update_time']).dt.date
+
+plt.style.use('seaborn')
+#myfont = FontProperties(fname='/System/Library/Fonts/PingFang.ttc')
+plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
+#修改坐标轴字号
+
+for index, row in dfev[0:1].iterrows():
+    if not pd.isna(row['editcount']):
+        df1 = df[df['entry'] == row['entry']]
+        df1group = df1.groupby('date').count()
+        #df1group['date'] = df1group.index
+        #pc95 = df1group['edit_count'].quantile(0.9)
+        df1group['Percentile Rank'] = df1group['edit_count'].rank(pct = True)
+        #df1group = pd.DataFrame(df1.groupby('date').count())
+        startt = df1group.index[0]
+        endt = startt + pd.Timedelta(days=180)
+        subset = df1group[startt:endt]
+        #print(startt, endt)
+        #x = pd.date_range(start=startt, end=endt, freq="30D") 
         
-conn1= sqlite.connect('test联立.sqlite')
-dfci.to_sql('cittion', conn1, index=True, if_exists = 'replace')
+        # Create figure and plot space
+        fig, ax = plt.subplots(figsize=(40, 10)) #figsize=(40, 10)搭配字体大小35
+        
+        # Add x-axis and y-axis
+        #ax.bar(subset.index.values, subset['edit_count'],color='navy')
+        ax.bar(subset.index.values, subset['edit_count'])
+        
+        #修改时间轴的刻度
+        x_major_locator=MultipleLocator(30)#把x轴的刻度间隔设置为30个单位（即一个月），并存在变量里
+        ax=plt.gca() #ax为两条坐标轴的实例
+        ax.xaxis.set_major_locator(x_major_locator)#把x轴的主刻度设置为x的倍数
+        #plt.xlim(-0.5,11)#把x轴的刻度范围设置为-0.5到11，因为0.5不满一个刻度间隔，所以数字不会显示出来，但是能看到一点空白
+        
+        #设置坐标轴标记和坐标轴标签的字体
+        plt.xlabel('时间', fontsize=35)
+        plt.ylabel('词条编辑次数', fontsize=35)
+        plt.yticks(fontproperties = 'Times New Roman', size = 35, fontweight='normal')
+        plt.xticks(fontproperties = 'Times New Roman', size = 35, fontweight='normal')
+        
+        plt.savefig('%s.png' %(row['entry']), bbox_inches='tight', dpi=300) #tight去除输出时四周白边
+        plt.show()
+        #subset['edit_count'].plot(figsize=(40,10))
+    
+
+#持续时间：最后一天-第一天
+
+
+
+
+
 conn1.close()            
 
 

@@ -514,7 +514,7 @@ original_window = browser.current_window_handle
 
 dfall_new = pd.DataFrame(columns=['entry','edit_entryindex','author_name', 'update_time','edit_time'])
 
-for index, row in dfev[24:50].iterrows():
+for index, row in dfev.iterrows():
 #for index, row in dfev[1:2].iterrows():
     editurl = row['editurl']
     editcount = row['editcount']
@@ -528,7 +528,7 @@ for index, row in dfev[24:50].iterrows():
             edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
             browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
             browser.switch_to.window(browser.window_handles[-1]) #切换窗口
-            time.sleep(2.5)
+            time.sleep(3)
             #一直等待到元素可见
             wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'td')))
             lst = get_elements(browser, By.TAG_NAME, 'td')
@@ -542,14 +542,18 @@ for index, row in dfev[24:50].iterrows():
             for blockchain in blockchains:
                 blockchain.click()
                 time.sleep(3.5) #这个停顿一定需要，否则页面没有更新，定位元素会找不到
-                wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,
-                                                                                             'ul.hash-info > li:nth-child(3)')))
+                # wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,'ul.hash-info > li:nth-child(3)')))
                 real_timeli = get_elements(browser, By.CSS_SELECTOR, 'ul.hash-info > li:nth-child(3)')
-                real_time = real_timeli[0][5:]
-                time_new.append(real_time)
+                if real_timeli:
+                    real_time = real_timeli[0][5:]
+                    time_new.append(real_time)
+                    closewindow = click_elements(browser, By.CSS_SELECTOR, 'dl.wgt_dialog.modal.blockChain-dialog > dd.close.dialog-btn > em')[0]
+
+                else:
+                    time_new.append(pd.NaT)
+                    closewindow = click_elements(browser, By.CSS_SELECTOR, 'dl.wgt_dialog.no-title.modal.width-fixed > dd.close.dialog-btn > em')[0]
+                #------关闭打开的区块链窗口------ 
                 
-                #------关闭打开的区块链窗口------
-                closewindow = click_elements(browser, By.CSS_SELECTOR, 'dl.wgt_dialog.modal.blockChain-dialog > dd.close.dialog-btn > em')[0]
                 browser.execute_script('arguments[0].click();', closewindow)
             browser.close() #关闭当前的编辑历史标签页
             browser.switch_to.window(original_window) #回到原初的百科页面
@@ -568,6 +572,8 @@ browser.close() #关闭当前的编辑历史标签页
 browser.quit()
 
 dfall_new['update_time'] = pd.to_datetime(dfall_new['update_time'])
+
+dfall_new['edit_time'] = dfall_new['edit_time'].replace('待补全',value=pd.NaT)
 dfall_new['edit_time'] = pd.to_datetime(dfall_new['edit_time'])
 #dfall_new['time_di'] = dfall_new['update_time'] - dfall_new['edit_time']
 #dfall_new['di_sec'] = df['time_di'].total_seconds()
@@ -583,11 +589,36 @@ dfall_new.index += 1
 dfall_new.to_sql('edithis', conn, index=True, if_exists = 'replace')
 conn.close()
 
-dfall_new.to_csv('dfall_new-2.csv',index=True)
-dfall_new.to_excel('dfall_new-2.xlsx',index=True)
+dfall_new.to_csv('dfall_new.csv',index=True)
+dfall_new.to_excel('dfall_new.xlsx',index=True)
+
+#把分csv拼接
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0208补全编辑时间戳')
+
+dfti0 = pd.read_csv('dfall_new.csv', index_col='Unnamed: 0')
+dfti1 = pd.read_csv('dfall_new-1.csv', index_col='Unnamed: 0')
+dfti2 = pd.read_csv('dfall_new-2.csv', index_col='Unnamed: 0')
+dfti3 = pd.read_csv('dfall_new-3.csv', index_col='Unnamed: 0')
+dfti4 = pd.read_csv('dfall_new-4.csv', index_col='Unnamed: 0')
+dfti5 = pd.read_csv('dfall_new-5.csv', index_col='Unnamed: 0')
+dfti6 = pd.read_csv('dfall_new-6.csv', index_col='Unnamed: 0')
+dfti7 = pd.read_csv('dfall_new-6-1.csv', index_col='Unnamed: 0')
+dfti8 = pd.read_csv('dfall_new-7.csv', index_col='Unnamed: 0')
+
+frames = [dfti0,dfti1,dfti2,dfti3,dfti4,dfti5,dfti6,dfti7,dfti8]
+df = pd.concat(frames,ignore_index=True, sort=False)#合并不保留原索引，启用新的自然索引：
+
+conn= sqlite.connect('alledittime.sqlite')
+df.index += 1
+df.to_sql('edittime', conn, index=True, if_exists = 'replace')
+conn.close()
+
+df.to_csv('alleditime.csv',index=True)
+#发现结果多了几十条编辑历史，再匹配到原表就行
 
 
-#%%
+#%% 测试网友代码从文本中提取时间
 testtext = """2008年中国南方雪灾是指自2008年1月3日起在中国发生的大范围低温、雨雪、冰冻等自然灾害。中国的上海、江苏、浙江、安徽、江西、河南、湖北、湖南、广东、广西、重庆、四川、贵州、云南、陕西、甘肃、青海、宁夏、新疆等20个省（区、市）均不同程度受到低温、雨雪、冰冻灾害影响。截至2月24日，因灾死亡129人，失踪4人，紧急转移安置166万人；农作物受灾面积1.78亿亩，成灾8764万亩，绝收2536万亩；倒塌房屋48.5万间，损坏房屋168.6万间；因灾直接经济损失1516.5亿元人民币。森林受损面积近2.79亿亩，3万只国家重点保护野生动物在雪灾中冻死或冻伤；受灾人口已超过1亿。其中安徽、江西、湖北、湖南、广西、四川和贵州等7个省份受灾最为严重。
 中国国家气象部门的专家指出，这次大范围的雨雪过程应归因于与拉尼娜（反圣婴）现象有关的大气环流异常：环流自1月起长期经向分布使冷空气活动频繁，同时副热带高压偏强、南支槽活跃，源自南方的暖湿空气与北方的冷空气在长江中下游地区交汇，形成强烈降水。大气环流的稳定使雨雪天气持续，最终酿成这次雪灾。
 北京：京呼航班全线延误首都机场因呼市突降大雪机场关闭，21日飞往呼和浩特共11趟航班全部延误，下午6时，所有航班的起飞时间都改在晚8时以后，但工作人员称，即使到了八点也不见得能够起飞。此外，北京飞往内蒙锡林浩特航班已经取消。铁路方面，北京西站候车大厅状况与往年春运期间无太多异常，未有旅客大面积滞留，大多列车可以准点出发，个别一两趟出现短时间晚点。

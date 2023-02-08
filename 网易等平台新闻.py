@@ -4,6 +4,7 @@
 Created on Wed Jan 18 17:23:19 2023
 
 @author: zhangsiqi
+草稿，用于确定元素定位的方式
 """
 
 from selenium import webdriver

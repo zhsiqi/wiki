@@ -56,7 +56,7 @@ for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     if pd.isna(url) == False and row['url_time'] == "['None', 'None', 'None']" :
-        #百度百家号
+        #%%百度百家号
         if dmname == 'baijiahao.baidu.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -76,7 +76,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #网易163    
+        #%%网易163    
         elif dmname == 'www.163.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -96,7 +96,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #央视新闻客户端
+        #%%央视新闻客户端
         elif dmname == 'content-static.cctvnews.cctv.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -115,7 +115,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #界面新闻
+        #%%界面新闻
         elif dmname == 'www.jiemian.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -134,7 +134,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #凤凰网
+        #%%凤凰网
         elif dmname == 'news.ifeng.com' and '200' in row['status_code']:
             if not url == 'https://news.ifeng.com/' and 'https://news.ifeng.com/c/404' not in url:
                 try:
@@ -155,7 +155,7 @@ for index, row in df.iterrows():
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
-        #澎湃网       
+        #%%澎湃网       
         elif dmname == 'www.thepaper.cn' and '200' in row['status_code']:
             if not url == 'https://www.thepaper.cn/':
                 try:
@@ -257,7 +257,7 @@ for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     if pd.isna(url) == False and row['url_time'] == "['None', 'None', 'None']" :
-        #北京日报客户端
+        #%%北京日报客户端
         if dmname == 'bj.bjd.com.cn' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -280,7 +280,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #百度百家号pc新闻    
+        #%%百度百家号pc新闻    
         elif dmname == 'mbd.baidu.com' and '200' in row['status_code'] and 'newspage/data/error?' not in url:
             try:
                 browser.get(url.strip())
@@ -305,7 +305,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #微信公众号平台
+        #%%微信公众号平台
         elif dmname == 'mp.weixin.qq.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -326,7 +326,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #人民日报客户端
+        #%%人民日报客户端
         elif dmname == 'wap.peopleapp.com' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -420,7 +420,7 @@ for index, row in df.iterrows():
     url = row['origin_url']
     dmname = row['domain']
     if pd.isna(url) == False and row['url_time'] == "['None', 'None', 'None']" :
-        #澎湃网元素修正 
+        #%%澎湃网元素修正 
         if dmname == 'www.thepaper.cn' and '200' in row['status_code']:
             if not url == 'https://www.thepaper.cn/' and pd.isna(row['timestamp']) == False and not '20' in row['timestamp']:
                 try:
@@ -456,7 +456,7 @@ for index, row in df.iterrows():
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
-        #澎湃网移动端
+        #%%澎湃网移动端
         elif dmname == 'm.thepaper.cn' and '200' in row['status_code']:
             browser.get(url.strip())
             if '/newsDetail' in url:
@@ -513,7 +513,7 @@ for index, row in df.iterrows():
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
-        #界面新闻元素修正
+        #%%界面新闻元素修正
         elif dmname == 'www.jiemian.com' and '200' in row['status_code']:
             if pd.isna(row['timestamp']) == False and not '20' in row['timestamp']:
                 try:
@@ -533,7 +533,7 @@ for index, row in df.iterrows():
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
-        #beijing daily app
+        #%%beijing daily app
         elif dmname == 'ie.bjd.com.cn' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -555,7 +555,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #guanchawang    
+        #%%guanchawang    
         elif dmname == 'www.guancha.cn' and '200' in row['status_code']:
             try:
                 browser.get(url.strip())
@@ -576,7 +576,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #fenghuang finance
+        #%%fenghuang finance
         elif dmname == 'finance.ifeng.com' and '200' in row['status_code']:
             if not url == 'https://finance.ifeng.com/' and not url == 'https://finance.ifeng.com/c/404':
                 try:
@@ -598,7 +598,7 @@ for index, row in df.iterrows():
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
-        #FIFA
+        #%%FIFA
         elif dmname == 'www.fifa.com':
             try:
                 browser.get(url.strip())
@@ -617,7 +617,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
-        #fenghuang app
+        #%%fenghuang app
         elif dmname == 'ishare.ifeng.com':
             if not url == 'https://ishare.ifeng.com/hotNewsShare404':
                 try:
@@ -639,6 +639,7 @@ for index, row in df.iterrows():
                 get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
                 print(index, row['reference_title'], url)
                 time.sleep(1.5)
+        #%% 3w.huanqiu
         elif dmname == '3w.huanqiu.com':
             try:
                 browser.get(url.strip())
@@ -659,6 +660,7 @@ for index, row in df.iterrows():
             get_html(filepath, browser, row['reference_title'], row['entry'], row['reference_entryindex'])
             print(index, row['reference_title'], url)
             time.sleep(1.5)
+        #%% slide.sina
         elif dmname == 'slide.news.sina.com.cn':
             try:
                 browser.get(url.strip())
