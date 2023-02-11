@@ -468,7 +468,7 @@ for index, row in dfev.iterrows():
         dfedi_ev = dfedi.loc[dfedi['entry'] == row['entry'],'edit_time'].dropna()
         for time in dfci_ev:
             a = dfedi_ev[dfedi_ev.str.startswith(time)].tolist() #找到匹配的编辑时间
-            if a:#如果匹配上了
+            if a:#如果匹配上
                 dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_timestamp'] = str(a)
                 dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_time_count'] = len(a)
             else:
@@ -476,10 +476,303 @@ for index, row in dfev.iterrows():
                 dfci.loc[(dfci['entry']==row['entry']) & (dfci['cite_time']==time),'ci_time_count'] = np.nan
             #print(a)
 
-dfci.to_sql('cittion_edtime', conn, index=False, if_exists = 'replace')    
+dfci.to_sql('cittion_edtime', conn, index=True, if_exists = 'replace')    
 conn.close()
 
-#%% 画时间趋势图
+dfci.to_csv('cittion_edtime.csv',index=True)
+
+#%
+conn0 = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情/Wiki.sqlite')
+df0 = pd.read_sql('SELECT * FROM ci', conn0, index_col='level_0')
+
+df0['ci_timestamp']=dfci['ci_timestamp']
+df0['ci_time_count']=dfci['ci_time_count']
+
+df0.to_sql('ci', conn0, index=True, if_exists = 'replace')    
+conn0.close()
+#%% 清洗整理新闻发布时间戳数据
+
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+import datefinder
+
+conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情/Wiki.sqlite')
+df = pd.read_sql('SELECT * FROM ci', conn)
+
+
+df['tistamp_cl'] = df['timestamp'].replace(regex=['\n', '日'], value=' ') 
+df['tistamp_cl'] = df['tistamp_cl'].replace(regex=['年', '月'], value='-')
+df['tistamp_cl'] = df['tistamp_cl'].replace(regex =[r'[\u4e00-\u9fa5]'], value=' ') 
+df['tistamp_cl'] = df['tistamp_cl'].replace(regex =['：','　www.gov.cn ','【','】','“','”','　:  ',': -  '], value='') 
+df['finestamp']=pd.NaT
+
+for index, row in df.iterrows():
+    if pd.notna(row['tistamp_cl']) and ':' in row['tistamp_cl']: #剔除timestamp中没有时分的
+        if 'org/zg2016/hbjs/index.html' not in row['origin_url']: #g20官网有几个年份不完整导致识别错误
+            text = row['tistamp_cl']
+        else:
+            text = '20' + row['tistamp_cl'].strip()
+        matches = datefinder.find_dates(text, strict=True)
+        #time=pd.NaT
+        for match in matches:
+            time=match
+        df.at[index, 'finestamp'] = time
+
+# conn1 = sqlite.connect('test.sqlite')
+# df.index += 1
+# df.to_sql('test', conn1, index=True, if_exists = 'replace')
+# conn1.close()
+
+df.drop(columns=['tistamp_cl','test'],inplace=True)
+
+df.index += 1
+df.to_sql('ci', conn, index=False, if_exists = 'replace')    
+conn.close()
+
+
+#%% 清洗整理引用时间戳数据
+
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+import datefinder
+from ast import literal_eval
+
+conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情/Wiki.sqlite')
+df = pd.read_sql('SELECT * FROM ci', conn)
+
+df['test']=None
+df['one_citime']=pd.NaT
+df['stamp_di']=pd.to_timedelta(0)
+
+for index, row in df.iterrows():
+    if pd.notna(row['ci_timestamp']):
+        ele = literal_eval(row['ci_timestamp'])
+        df.at[index,'test'] = ele
+        if len(ele)==1:
+            df.at[index,'one_citime']=pd.to_datetime(ele[0])
+        else:
+            df.at[index,'stamp_di']=pd.to_datetime(ele[0])-pd.to_datetime(ele[-1])
+
+b = df['one_citime']
+c = df['stamp_di']
+dis = c.value_counts()
+
+df.drop(columns=['test','index'],inplace=True)
+
+df.index += 1
+df.to_sql('ci', conn, index=True, if_exists = 'replace')    
+conn.close()
+
+#%% 引入事件开始时间数据 2023-02-10
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+import datefinder
+from ast import literal_eval
+import datefinder
+from datetime import datetime
+
+conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情/Wiki.sqlite')
+df = pd.read_sql('SELECT * FROM events', conn)
+
+dfev = pd.read_excel('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间/events.xlsx')
+dfe = dfev[['entryindex','entry','start_time','uncovertime','once','end_time']]
+
+dfm = pd.merge(df, dfe, how='left', on=['entryindex','entry'])
+
+dfm.drop(columns=['index'],inplace=True)
+
+#处理时间格式
+def time_clean(series):
+    series = series.replace(regex=['秒', '日'], value=' ')
+    series = series.replace(regex=['年', '月'], value='-')
+    series = series.replace(regex=['时', '点', '分'], value=':')
+    series = series.replace(regex=['  '], value=' ')
+    series = series.replace(r':$', value='', regex=True)
+    return series
+
+dfm.start_time = time_clean(dfm['start_time'])
+# dfm.once = time_clean(dfm['once'])
+# dfm.end_time = time_clean(dfm['end_time'])
+
+dfm.start_time.astype(str)
+# dfm.once.astype(str)
+# dfm.end_time.astype(str)
+
+dfm['start_cl'] = pd.NaT
+# dfm['once_cl'] = pd.NaT
+# dfm['end_cl'] = pd.NaT
+
+def get_date(df,textrow,targetrow):
+    for index, row in df.iterrows():
+        if pd.notna(row[textrow]):
+            matches = datefinder.find_dates(row[textrow], strict=True)
+            for match in matches:
+                time=match
+            df.at[index, targetrow] = time
+
+get_date(dfm,'start_time','start_cl')
+# get_date(dfm,'once','once_cl')
+# get_date(dfm,'end_time','end_cl')
+
+
+# for index, row in dfm.iterrows():
+#     if pd.notna(row['start_time']):
+#         matches = datefinder.find_dates(row['start_time'], strict=True)
+#         for match in matches:
+#             time=match
+#         dfm.at[index, 'start_cl'] = time
+
+
+#下面两种做法老是报错，单个测试字符串又没错，不理解
+# for index, row in dfm.iterrows():
+#     dfm.at[index, 'start_time']=pd.to_datetime(row['start_time'])
+
+# dfm.start_time = pd.Timestamp(dfm['start_time'])
+# dfm.once = pd.Timestamp(dfm['once'])
+# dfm.end_time = pd.Timestamp(dfm['end_time'])
+
+
+dfm.index += 1
+dfm.to_sql('events', conn, index=True, if_exists = 'replace')    
+conn.close()
+
+#%% 词条的首尾编辑时间和时间差 2023-02-10
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+from datetime import datetime
+
+
+conn= sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情/Wiki.sqlite')
+
+dfev = pd.read_sql('SELECT * FROM events', conn, index_col='index')
+dfedi = pd.read_sql('SELECT * FROM edit_time', conn, index_col='index')
+
+dfev['edi_start'] = pd.NaT
+dfev['edi_end'] = pd.NaT
+dfev['edi_range'] = np.nan
+dfev['create_range'] = np.nan
+
+for index, row in dfev.iterrows():
+#for index, row in dfev[20:21].iterrows():
+    #去除空值后返回独特的引用日期
+    if row['editcount'] > 0:
+        #下面两行都要去除序列里的空值
+        dfedi_ev = dfedi.loc[dfedi['entry'] == row['entry'],'edit_time'].dropna().unique()
+        dfev.at[index,'edi_start'] = pd.to_datetime(dfedi_ev[-1])
+        dfev.at[index,'edi_end'] = pd.to_datetime(dfedi_ev[0])
+        dfev.at[index,'edi_range'] = pd.to_datetime(dfedi_ev[0]) - pd.to_datetime(dfedi_ev[-1])
+        if pd.notna(row['start_cl']):
+            dfev.at[index,'create_range'] = pd.to_datetime(dfedi_ev[-1]) - pd.to_datetime(row['start_cl'])
+
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间')
+dfev.to_csv('events+timestamp.csv',index=True)
+dfev.to_excel('events+timestamp.xlsx',index=True)
+
+# dfev.edi_start = dfev['edi_start'].map(lambda _: _.strftime("%Y-%m-%d %H:%M"), na_action='ignore')
+# dfev.edi_end = dfev['edi_end'].map(lambda _: _.strftime("%Y-%m-%d %H:%M"), na_action='ignore')
+
+#又是历久弥新的时间格式不匹配事件
+df1 = pd.read_csv('events+timestamp.csv',index_col=0)
+
+df1.to_sql('events', conn, index=True, if_exists = 'replace')    
+conn.close()
+#%% 修改事件时间 联立事件类型
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+from datetime import datetime
+
+
+conn= sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0204删除多余疫情/Wiki.sqlite')
+
+df = pd.read_sql('SELECT * FROM events', conn, index_col='index')
+
+df.start_cl = pd.to_datetime(df['start_cl'])
+df.edi_start = pd.to_datetime(df['edi_start'])
+df.edi_end = pd.to_datetime(df['edi_end'])
+
+df.edi_range = pd.to_timedelta(df['edi_range'])
+df.create_range = pd.to_timedelta(df['create_range'])
+
+df.create_range = pd.NaT
+df['create_range'] = df['edi_start'] - df['start_cl']
+
+#终于学会这个apply 每行遍历，按列计算，虽然这是一个由于手误写错变量名引发的解决方案（哭泣
+#下面两行尝试下来，至少两列相减pandas会自己处理缺失值
+df['test'] = df.apply(lambda row: row['edi_start'] - row['start_cl'] if pd.notna(row['edi_start']) and pd.notna(row['start_cl']) else pd.NaT, axis=1)
+df['test1'] = df.apply(lambda row: row['edi_start'] - row['start_cl'], axis=1)
+
+df.drop(columns=['test','test1'],inplace=True)
+
+
+# 创建词条时间差均值
+df['create_range'][df['create_range']>pd.to_timedelta(0)].mean()
+
+# 联立事件类型
+dfty = pd.read_excel('/Users/zhangsiqi/Desktop/毕业论文代码mini/evtype.xlsx')
+
+dfm = pd.merge(df, dfty, how='left', on=['entry'])
+
+dfm.drop(columns=['index'],inplace=True)
+
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间')
+dfm.to_csv('events+timestamp+evtype.csv',index=True)
+dfm.to_excel('events+timestamp+evtype.xlsx',index=True)
+
+
+#又是历久弥新的时间格式不匹配事件
+df = pd.read_csv('events+timestamp+evtype.csv',index_col=0)
+
+df.to_sql('events', conn, index=True, if_exists = 'replace')    
+conn.close()
+
+
+#又是历久弥新的时间格式转换
+df.start_cl = pd.to_datetime(df['start_cl'])
+df.edi_start = pd.to_datetime(df['edi_start'])
+df.edi_end = pd.to_datetime(df['edi_end'])
+
+df.edi_range = pd.to_timedelta(df['edi_range'])
+df.create_range = pd.to_timedelta(df['create_range'])
+
+df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y')
+
+
+#按年分组
+grouped = df.groupby('year')
+
+#编辑历史时间跨度
+gr_des = grouped.describe()
+gr_des.to_excel('gr_des.xlsx', index=True)
+
+#词条编辑起止时间平均值
+edi_end_mean = grouped.agg({'edi_start':'mean','edi_end':'mean'})
+edi_end_mean.to_excel('edi_end_mean.xlsx',sheet_name='test_new',index=True)
+
+# 写入已有Excel文件的新表单
+# writer = pd.ExcelWriter('model_predict.xlsx',mode='a', engine='openpyxl',if_sheet_exists='new')
+# df.to_excel(writer, sheet_name='sheet1')
+# writer.save()
+# writer.close()
+
+
+#%% 画图(时间趋势\)
 import pandas as pd 
 import numpy as np
 import matplotlib 
@@ -488,7 +781,150 @@ import matplotlib.dates as mdates
 from matplotlib.dates import DateFormatter
 from matplotlib.pyplot import MultipleLocator #设置坐标轴刻度
 from matplotlib.font_manager import *
-# import earthpy as et
+
+
+df = pd.read_csv('events+timestamp+evtype.csv',index_col=0)
+#又是历久弥新的时间格式转换
+df.start_cl = pd.to_datetime(df['start_cl'])
+df.edi_start = pd.to_datetime(df['edi_start'])
+df.edi_end = pd.to_datetime(df['edi_end'])
+
+df.edi_range = pd.to_timedelta(df['edi_range'])
+df.create_range = pd.to_timedelta(df['create_range'])
+
+df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y')
+
+
+#按年分组
+grouped = df.groupby('year')
+
+#编辑历史时间跨度
+gr_des = grouped.describe()
+gr_des.to_excel('gr_des.xlsx', index=True)
+
+
+table = df.pivot_table(index='entryindex',columns='year',values='edi_range_y')
+
+#pandas success
+year_edi_range = table.plot.hist(subplots=True, layout=(4, 3),
+                                  figsize=(20,26),sharex=False,
+                                  fontsize=20)
+
+
+
+table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
+           sharex=True, sharey=True, 
+           layout=(4,3),figsize=(22,22),fontsize=20)
+
+
+#%%还是pandas 终于成功版。。。。
+
+
+plt.rc('font',family='Times New Roman')
+
+ax=table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
+           sharex=True, sharey=True, figsize=(9,12),
+           layout=(4,3))
+
+#我搞不懂啊，为什么是这么取出来的，这不是取的第一个子图吗？通过测试证明，里面怎么取数字都不影响
+ax[0,0].get_figure().savefig('name+3',dpi=300,bbox_inches='tight')
+
+ax[2,2].get_figure().savefig('[2+2]',dpi=300,bbox_inches='tight')
+
+
+
+#%%还是pandas 成功版。。。。继续整活
+
+
+plt.rc('font',family='Times New Roman')
+
+ax=table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
+           sharex=True, sharey=True, figsize=(9,12),
+           layout=(4,3))
+
+ax.set_title('5 plots')
+
+plt.title('5 plots')
+ax[0,0].set_title('5 plots')
+
+plt.show()
+
+fig = ax[0,0].get_figure() #标题左上角
+fig1 = ax[3,1].get_figure() #标题左上角
+fig2 = ax[2,2].get_figure() #标题左上角
+
+#查看每个figure的axes，结果一模一样
+fig1.get_axes()
+
+#原来最后一个标题加在了被隐藏的axis，所以图片看不到
+
+#箱图
+df.boxplot(column='edi_range_y',by='year',figsize=(10,6)).get_figure().savefig('box.png',
+                                                                               dpi=300,bbox_inches='tight')
+
+axbox=table.plot.box(subplots=True, grid=True, legend=True, stacked=False, 
+           sharey=True, figsize=(9,12),
+           layout=(4,3))
+
+
+
+
+
+#%%
+
+f, axes = plt.subplots(4,3,figsize=(12,15),sharex='all',sharey='all')
+f.delaxes(axes[3,2]) #删除多余的图
+
+
+#
+
+axes[0,0].hist(df['edi_range_y'][df['year']==2011])
+axes[0,0].grid(True) #是否产生网格
+axes[0,0].legend(labels=('2011'), loc='lower left')
+
+axes[0,1].hist(df['edi_range_y'][df['year']==2012])
+axes[0,1].legend()
+axes[0,2].hist(df['edi_range_y'][df['year']==2013])
+axes[0,2].legend()
+
+axes[1,0].hist(df['edi_range_y'][df['year']==2014])
+axes[1,0].legend()
+axes[1,1].hist(df['edi_range_y'][df['year']==2015])
+axes[1,1].legend()
+axes[1,2].hist(df['edi_range_y'][df['year']==2016])
+axes[1,2].legend()
+
+axes[2,0].hist(df['edi_range_y'][df['year']==2017])
+axes[2,0].legend()
+axes[2,1].hist(df['edi_range_y'][df['year']==2018])
+axes[2,1].legend()
+axes[2,2].hist(df['edi_range_y'][df['year']==2019])
+axes[2,2].legend()
+axes[2,2].xaxis.set_tick_params(which='both', labelbottom=True, labeltop=False)  #强制控制x轴的显示
+
+axes[3,0].hist(df['edi_range_y'][df['year']==2020])
+axes[3,0].legend()
+axes[3,1].hist(df['edi_range_y'][df['year']==2021])
+axes[3,1].legend()
+
+plt.show()
+
+#简化上面的重复
+def sub_plot(row, column, catename, catelist, value):
+    index=0
+    for i in range(0,row):
+        for j in range(0,column):
+            axes[i,j].hist(df[value][df[catename]==catelist[index]])
+            #修改坐标轴字号
+            plt.yticks(fontproperties = 'Times New Roman',size = 18)
+            plt.xticks(fontproperties = 'Times New Roman',size = 18)
+            index+=1
+            if index==len(catelist):
+                break
+     
+cateli=df['year'].unique().tolist()
+sub_plot(4,3,'year',cateli,'edi_range_y')
+#%%
 
 df = pd.read_csv("edithistorysql.csv", index_col='Unnamed: 0')
 dfev = pd.read_csv('eventssql.csv', index_col='Unnamed: 0')
@@ -498,9 +934,9 @@ df['date'] = pd.to_datetime(df['update_time']).dt.date
 
 plt.style.use('seaborn')
 #myfont = FontProperties(fname='/System/Library/Fonts/PingFang.ttc')
-plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
+#plt.rcParams['font.sans-serif'] = ['SimHei']  # 用来正常显示中文标签
 plt.rcParams['axes.unicode_minus'] = False  # 用来正常显示负号
-#修改坐标轴字号
+
 
 for index, row in dfev[0:1].iterrows():
     if not pd.isna(row['editcount']):
