@@ -858,13 +858,9 @@ fig1.get_axes()
 
 #原来最后一个标题加在了被隐藏的axis，所以图片看不到
 
-#箱图
-df.boxplot(column='edi_range_y',by='year',figsize=(10,6)).get_figure().savefig('box.png',
+#箱图基本成了，只差注释
+df.boxplot(column='edi_range_y',by='year',figsize=(6,3.8)).get_figure().savefig('box.png',
                                                                                dpi=300,bbox_inches='tight')
-
-axbox=table.plot.box(subplots=True, grid=True, legend=True, stacked=False, 
-           sharey=True, figsize=(9,12),
-           layout=(4,3))
 
 
 
