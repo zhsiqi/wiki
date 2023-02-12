@@ -765,6 +765,10 @@ gr_des.to_excel('gr_des.xlsx', index=True)
 edi_end_mean = grouped.agg({'edi_start':'mean','edi_end':'mean'})
 edi_end_mean.to_excel('edi_end_mean.xlsx',sheet_name='test_new',index=True)
 
+#所有的词条编辑起止时间均值
+df['edi_start'].mean() #Timestamp('2015-10-01 18:03:02.752293632')
+df['edi_end'].mean() #Timestamp('2022-04-14 04:40:40.733945088')
+
 # 写入已有Excel文件的新表单
 # writer = pd.ExcelWriter('model_predict.xlsx',mode='a', engine='openpyxl',if_sheet_exists='new')
 # df.to_excel(writer, sheet_name='sheet1')
@@ -775,34 +779,80 @@ edi_end_mean.to_excel('edi_end_mean.xlsx',sheet_name='test_new',index=True)
 #%% 画图(时间趋势\)
 import pandas as pd 
 import numpy as np
-import matplotlib 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-from matplotlib.dates import DateFormatter
-from matplotlib.pyplot import MultipleLocator #设置坐标轴刻度
-from matplotlib.font_manager import *
 
+df = pd.read_excel('events+timestamp+evtype.xlsx',index_col=0)
+#df = pd.read_csv('events+timestamp+evtype.csv',index_col=0)
 
-df = pd.read_csv('events+timestamp+evtype.csv',index_col=0)
 #又是历久弥新的时间格式转换
 df.start_cl = pd.to_datetime(df['start_cl'])
 df.edi_start = pd.to_datetime(df['edi_start'])
 df.edi_end = pd.to_datetime(df['edi_end'])
 
+#更新了事件数据所以生成时间差重算
+df.create_range = pd.NaT
+df['create_range'] = df['edi_start'] - df['start_cl'] #事件开始-事件创建
+
+#时间差格式处理：delta
 df.edi_range = pd.to_timedelta(df['edi_range'])
 df.create_range = pd.to_timedelta(df['create_range'])
 
+#时间差单位处理成年/日
 df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y')
+df['cre_range_d'] = df['create_range'] / np.timedelta64(1, 'D') 
 
 
 #按年分组
 grouped = df.groupby('year')
 
-#编辑历史时间跨度
+#编辑历史时间跨度：数据描述
 gr_des = grouped.describe()
-gr_des.to_excel('gr_des.xlsx', index=True)
+gr_des.to_excel('gr_des_3.xlsx', index=True)
+median = grouped['edi_range_y'].median()
+
+alldescribe = df.describe()
+alldescribe.to_excel('all_des_3.xlsx', index=True)
 
 
+df.to_csv('events+timestamp+evtype+range.csv',index=True)
+df.to_excel('events+timestamp+evtype+range.xlsx',index=True)
+
+#创建时间数据透视表
+crtable = df.pivot_table(index='entryindex',columns='year',values='cre_range_d')
+
+#创建时间分箱形图，都太难看了
+df.boxplot(column='cre_range_d',by='year',figsize=(7,4.45)).get_figure().savefig('create.png',dpi=300,bbox_inches='tight')
+df.boxplot(column='cre_range_d',figsize=(4,8)).get_figure().savefig('create-boxl.png',dpi=300,bbox_inches='tight')
+
+#找出箱形图的对应值
+# 计算 四分位差
+QR = 64.1 #前面描述统计输出的四分位数，直接粘贴过来计算
+# 下限 与 上线
+low_limit = 0.71 - 1.5 * QR
+up_limit = 64.81 + 1.5 * QR
+print('下限为：', low_limit)
+print('上限为：', up_limit)
+print('异常值有：', df['cre_range_d'][(df['cre_range_d'] < low_limit) + (df['cre_range_d'] > up_limit)])
+#上面按1.5标准差计算，有65个异常值
+
+low_limit1 = 0.71 - 3.5 * QR
+up_limit1 = 64.81 + 3.5 * QR
+print('下限为：', low_limit1)
+print('上限为：', up_limit1)
+flyer = df['cre_range_d'][(df['cre_range_d'] < low_limit1) + (df['cre_range_d'] > up_limit1)]
+print('异常值有：', len(flyer))
+#上面按1.5标准差计算，有65个异常值
+cdata = df['cre_range_d'][(df['cre_range_d'] > low_limit1) & (df['cre_range_d'] < up_limit1)]
+
+cdata.plot.hist(bins=40,figsize=(5,5),xticks=[-200,-150,-100,-50,0,50,100,150,200,250]
+                ).get_figure().savefig('create+histcenter3.png',dpi=300,bbox_inches='tight') #,grid=True
+
+#创建时间直方图
+df['cre_range_d'].plot.hist(bins=40,figsize=(5,5)).get_figure().savefig('createhistalll4.png',dpi=300,bbox_inches='tight')
+
+
+#编辑历史数据透视表
 table = df.pivot_table(index='entryindex',columns='year',values='edi_range_y')
 
 #pandas success
@@ -859,9 +909,83 @@ fig1.get_axes()
 #原来最后一个标题加在了被隐藏的axis，所以图片看不到
 
 #箱图基本成了，只差注释
-df.boxplot(column='edi_range_y',by='year',figsize=(6,3.8)).get_figure().savefig('box.png',
-                                                                               dpi=300,bbox_inches='tight')
+df.boxplot(column='edi_range_y',by='year',figsize=(7,4.45)).get_figure().savefig('box+1.png',dpi=300,bbox_inches='tight')
 
+#matplot 多个箱形图
+import matplotlib.pyplot as plt
+import numpy as np
+
+#按年分组并得到每个组的edi_range_y值
+tablebox = df.groupby('year')['edi_range_y']
+
+tableboxli = []
+tablenameli = []
+for name, group in tablebox:
+    tableboxli.append(group)
+    tablenameli.append(name)
+
+plt.grid(True)  #显示网格
+
+plt.boxplot(tableboxli, labels=tablenameli, showmeans=True)  # 绘制箱线图
+
+
+plt.savefig('box+6.png',dpi=300,bbox_inches='tight')
+plt.show()  # 显示图片
+
+
+#boxprops=dict(linewidth=0.8)
+#plt.boxplot(tableboxli, labels=tablenameli, showmeans=True, boxprops=boxprops)  # 绘制箱线图
+
+# import matplotlib as mpl
+# mpl.rcParams['lines.linewidth'] = 0.8
+
+#%% 时间线图
+df['edi_start_d']=df['edi_start'].dt.date
+df['edi_end_d']=df['edi_end'].dt.date
+
+
+#下面是只画出两条线
+
+dates=[df[0:1]['edi_start_d'],df[0:1]['edi_end_d']]
+dates1 = [df[1:2]['edi_start_d'],df[0:1]['edi_end_d']]
+# Create figure and plot a stem plot with the date
+fig, ax = plt.subplots(figsize=(12, 3), constrained_layout=True)
+ax.set(title="timeline")
+
+ax.plot(dates, np.zeros_like(dates), "-o", color="k", markerfacecolor="w")  # Baseline and markers on it.
+ax.plot(dates1, np.zeros_like(dates)-1, "-o", color="k", markerfacecolor="w")  # Baseline and markers on it.
+
+# remove y axis and spines
+#ax.yaxis.set_visible(False)
+# format xaxis with 4 month intervals
+ax.xaxis.set_major_locator(mdates.YearLocator(1))
+
+
+plt.show()
+
+
+#下面是画出所有事件的时间线
+fig, ax = plt.subplots(figsize=(12, 40), constrained_layout=True)
+ax.set(title="timeline")
+
+for index, row in df.iterrows():
+    if row['editcount']>0:
+        dates=[row["edi_start_d"],row["edi_end_d"]]
+        value=[220-index,220-index]
+        ax.plot(dates, value, "-o", color="k", markerfacecolor="w")
+        # fig.add_trace(go.Scatter(x=[start, end], y=[value, value],
+        #                 mode='lines'))  
+
+ax.xaxis.set_major_locator(mdates.YearLocator(1))
+ax.set_ylim([0, 221]) #设置Y轴范围
+ax.yaxis.set_visible(False) #隐藏Y轴
+plt.show()
+
+
+# format xaxis with 4 month intervals
+ax.xaxis.set_major_locator(mdates.MonthLocator(interval=4))
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
 
 
 
@@ -870,9 +994,6 @@ df.boxplot(column='edi_range_y',by='year',figsize=(6,3.8)).get_figure().savefig(
 
 f, axes = plt.subplots(4,3,figsize=(12,15),sharex='all',sharey='all')
 f.delaxes(axes[3,2]) #删除多余的图
-
-
-#
 
 axes[0,0].hist(df['edi_range_y'][df['year']==2011])
 axes[0,0].grid(True) #是否产生网格
@@ -921,6 +1042,14 @@ def sub_plot(row, column, catename, catelist, value):
 cateli=df['year'].unique().tolist()
 sub_plot(4,3,'year',cateli,'edi_range_y')
 #%%
+
+import matplotlib 
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+from matplotlib.dates import DateFormatter
+from matplotlib.pyplot import MultipleLocator #设置坐标轴刻度
+from matplotlib.font_manager import *
+
 
 df = pd.read_csv("edithistorysql.csv", index_col='Unnamed: 0')
 dfev = pd.read_csv('eventssql.csv', index_col='Unnamed: 0')
