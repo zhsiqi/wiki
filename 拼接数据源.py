@@ -20,7 +20,7 @@ df = pd.read_csv('citation+html2date.csv', index_col='Unnamed: 0')
 
 #查看每列的缺失值
 print(df.isnull().sum())
-#%% 修正百科的参考资料源日期 20230125
+#%% 修正百科的参考资料源日期 20230125，已经改回主代码
 for index, row in df.iterrows():
     text =  row['reference_text']
     ti = re.search(r'(?<!引用日期)．(?P<y>20[0-2][0-9])[-年\.](?P<m>[0-1]?[0-9])[-月\.](?P<d>[0-3]?[0-9])[日\.\[\s]?', text)
