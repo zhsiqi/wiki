@@ -782,74 +782,132 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-df = pd.read_excel('events+timestamp+evtype.xlsx',index_col=0)
-#df = pd.read_csv('events+timestamp+evtype.csv',index_col=0)
+plt.rc('font',family='Times New Roman')
+
+df = pd.read_excel('events+timestamp+evtype+range.xlsx',index_col=0)
 
 #又是历久弥新的时间格式转换
 df.start_cl = pd.to_datetime(df['start_cl'])
 df.edi_start = pd.to_datetime(df['edi_start'])
 df.edi_end = pd.to_datetime(df['edi_end'])
 
-#更新了事件数据所以生成时间差重算
+#更新了事件数据所以时间差重算
 df.create_range = pd.NaT
-df['create_range'] = df['edi_start'] - df['start_cl'] #事件开始-事件创建
+#df['create_range'] = df['docu_start'] - df['start_cl'] #开始记录-事件发生
+
+df.edi_range = pd.NaT
+df['edi_range'] = df['edi_end'] - df['docu_start'] #事件开始-事件创建
 
 #时间差格式处理：delta
 df.edi_range = pd.to_timedelta(df['edi_range'])
-df.create_range = pd.to_timedelta(df['create_range'])
+#df.create_range = pd.to_timedelta(df['create_range'])
 
 #时间差单位处理成年/日
 df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y')
-df['cre_range_d'] = df['create_range'] / np.timedelta64(1, 'D') 
+#df['cre_range_d'] = df['create_range'] / np.timedelta64(1, 'D') 
 
-
-#按年分组
+#数据表按年分组
 grouped = df.groupby('year')
 
 #编辑历史时间跨度：数据描述
 gr_des = grouped.describe()
-gr_des.to_excel('gr_des_3.xlsx', index=True)
-median = grouped['edi_range_y'].median()
+gr_des.to_excel('gr_des_4.xlsx', index=True)
+# = grouped['edi_range_y'].median()
 
 alldescribe = df.describe()
-alldescribe.to_excel('all_des_3.xlsx', index=True)
+alldescribe.to_excel('all_des_5.xlsx', index=True)
 
 
-df.to_csv('events+timestamp+evtype+range.csv',index=True)
-df.to_excel('events+timestamp+evtype+range.xlsx',index=True)
+df.to_csv('events+timestamp+evtype+range+event.csv',index=True)
+df.to_excel('events+timestamp+evtype+range+event.xlsx',index=True)
 
-#创建时间数据透视表
-crtable = df.pivot_table(index='entryindex',columns='year',values='cre_range_d')
+#2023-02-13按事件找到最早的词条编辑时间
+#取出正经的当年事件的事件词条
+df1 = df[pd.isna(df['notforyearevent'])]
+
+#按事件找到词条的最早创建时间:按事件groupby/透视的行
+
+evgroup= df1.groupby('event_id')
+evgroupmin = evgroup.min()
+docu_star_min = evgroup['docu_start'].min()
+ev_star_min = evgroup['start_cl'].min()
+
+#以事件为单位计算创建速度
+evgroupmin.create_range = pd.NaT
+#时间差=开始记录时间-事件发生时间
+evgroupmin['create_range'] = evgroupmin['docu_start'] - evgroupmin['start_cl']
+#时间差数据格式化 delta
+evgroupmin.create_range = pd.to_timedelta(evgroupmin['create_range'])
+#时间差数据转天数
+evgroupmin['cre_range_d'] = evgroupmin['create_range'] / np.timedelta64(1, 'D')
+
+evgroupmin.to_excel('evgroupmin.xlsx', index=True)
+
+evdata = evgroupmin[['event','year','start_cl','cre_range_d','disaster','antici']] #这个表的索引就是event_id
+
+evdata.to_excel('evdata.xlsx',index=True)
+
+#event总体描述
+allev_des = evdata.describe()
+allev_des.to_excel('allev_des.xlsx', index=True)
+
+#使用antici分组,完成数据描述
+anticigr = evdata.groupby('antici')
+
+antici_des = anticigr.describe()
+antici_des.to_excel('antici_des.xlsx', index=True)
+
+#使用disater组,完成数据描述
+disasgr = evdata.groupby('disaster')
+
+disasgr_des = disasgr.describe()
+disasgr_des.to_excel('disasgr_des.xlsx', index=True)
+
 
 #创建时间分箱形图，都太难看了
-df.boxplot(column='cre_range_d',by='year',figsize=(7,4.45)).get_figure().savefig('create.png',dpi=300,bbox_inches='tight')
-df.boxplot(column='cre_range_d',figsize=(4,8)).get_figure().savefig('create-boxl.png',dpi=300,bbox_inches='tight')
+evdata.boxplot(column='cre_range_d',by='year',figsize=(7,4.45)).get_figure().savefig('create.png',dpi=300,bbox_inches='tight')
+
+evdata.boxplot(column='cre_range_d',figsize=(4,8)).get_figure().savefig('create-boxl.png',dpi=300,bbox_inches='tight')
+
 
 #找出箱形图的对应值
 # 计算 四分位差
-QR = 64.1 #前面描述统计输出的四分位数，直接粘贴过来计算
+QR = 7.24 #前面描述统计输出的四分位数，直接粘贴过来计算出QR
 # 下限 与 上线
-low_limit = 0.71 - 1.5 * QR
-up_limit = 64.81 + 1.5 * QR
+low_limit = 0.46 - 1.5 * QR
+up_limit = 7.70 + 1.5 * QR
 print('下限为：', low_limit)
 print('上限为：', up_limit)
-print('异常值有：', df['cre_range_d'][(df['cre_range_d'] < low_limit) + (df['cre_range_d'] > up_limit)])
-#上面按1.5标准差计算，有65个异常值
+print('异常值有：', evdata['cre_range_d'][(evdata['cre_range_d'] < low_limit) + (evdata['cre_range_d'] > up_limit)])
+#上面按1.5标准差计算，下限为： -10.4,上限为： 18.56,有36个异常值
 
-low_limit1 = 0.71 - 3.5 * QR
-up_limit1 = 64.81 + 3.5 * QR
-print('下限为：', low_limit1)
-print('上限为：', up_limit1)
-flyer = df['cre_range_d'][(df['cre_range_d'] < low_limit1) + (df['cre_range_d'] > up_limit1)]
-print('异常值有：', len(flyer))
-#上面按1.5标准差计算，有65个异常值
-cdata = df['cre_range_d'][(df['cre_range_d'] > low_limit1) & (df['cre_range_d'] < up_limit1)]
+#异常值单独取出
+flyer = evdata[['cre_range_d','event']][(evdata['cre_range_d'] < low_limit) + (evdata['cre_range_d'] > up_limit)]
 
-cdata.plot.hist(bins=40,figsize=(5,5),xticks=[-200,-150,-100,-50,0,50,100,150,200,250]
-                ).get_figure().savefig('create+histcenter3.png',dpi=300,bbox_inches='tight') #,grid=True
+# low_limit1 = 0.47 - 3 * QR
+# up_limit1 = 7.80 + 3 * QR
+# print('下限为：', low_limit1)
+# print('上限为：', up_limit1)
+# flyer = evdata[['cre_range_d','event']][(evdata['cre_range_d'] < low_limit1) + (evdata['cre_range_d'] > up_limit1)]
+# print('异常值有：', len(flyer))
+# #上面按1.5标准差计算，有31个异常值
 
-#创建时间直方图
-df['cre_range_d'].plot.hist(bins=40,figsize=(5,5)).get_figure().savefig('createhistalll4.png',dpi=300,bbox_inches='tight')
+#除去异常值的中间值,创建直方图
+cdata = evdata['cre_range_d'][(evdata['cre_range_d'] > low_limit) & (evdata['cre_range_d'] < up_limit)]
+
+chist = cdata.plot.hist(bins=17,figsize=(5,5),
+                        xticks=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17],
+                        edgecolor="white",
+                        linewidth=0.4
+                )
+chist.get_figure().savefig('create+histcenter17-1.png',dpi=300,bbox_inches='tight') #,grid=True
+
+#xticks=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+
+#不剔除异常值，创建直方图
+evdata['cre_range_d'].plot.hist(bins=40,figsize=(5,5),
+                                edgecolor="white",
+                                linewidth=0.4).get_figure().savefig('createhistalll4.png',dpi=300,bbox_inches='tight')
 
 
 #编辑历史数据透视表
@@ -865,6 +923,7 @@ year_edi_range = table.plot.hist(subplots=True, layout=(4, 3),
 table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
            sharex=True, sharey=True, 
            layout=(4,3),figsize=(22,22),fontsize=20)
+
 
 
 #%%还是pandas 终于成功版。。。。
