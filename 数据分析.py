@@ -792,6 +792,7 @@ df = pd.read_excel('events+timestamp+evtype+range.xlsx',index_col=0)
 df.start_cl = pd.to_datetime(df['start_cl'])
 df.edi_start = pd.to_datetime(df['edi_start'])
 df.edi_end = pd.to_datetime(df['edi_end'])
+df.docu_start = pd.to_datetime(df['docu_start'])
 
 #更新了事件数据所以时间差重算
 df.create_range = pd.NaT
@@ -945,6 +946,7 @@ df = pd.read_excel('events+timestamp+evtype+range+event.xlsx',index_col=0)
 df.start_cl = pd.to_datetime(df['start_cl'])
 df.edi_start = pd.to_datetime(df['edi_start'])
 df.edi_end = pd.to_datetime(df['edi_end'])
+df.docu_start = pd.to_datetime(df['docu_start'])
 
 # #数据表按年分组,描述编辑间隔
 # grouped = df.groupby('year')
@@ -992,7 +994,7 @@ posi_des.to_excel('posi_des.xlsx', index=True)
 
 #基于正负小组使用时间范围分组，完成数据描述
 pocen = positive.get_group(True)['cre_range_d']
-multigr = pd.cut(pocen, bins=[0,1,3,10,60,np.inf])
+multigr = pd.cut(pocen, bins=[0,1,3,7,30,100,np.inf])
 multigr_des = pocen.groupby(multigr).describe()
 multigr_des.to_excel('posimulti_des.xlsx', index=True)
 
@@ -1006,13 +1008,13 @@ manygr_des.to_excel('negmulti_des.xlsx', index=True)
 anticigr = evdata.groupby('antici')
 
 antici_des = anticigr.describe()
-antici_des.to_excel('antici_des.xlsx', index=True)
+antici_des.to_excel('cre_antici_des.xlsx', index=True)
 
 #使用disater组,完成数据描述
 disasgr = evdata.groupby('disaster')
 
 disasgr_des = disasgr.describe()
-disasgr_des.to_excel('disasgr_des.xlsx', index=True)
+disasgr_des.to_excel('cre_disasgr_des.xlsx', index=True)
 
 
 
@@ -1023,10 +1025,9 @@ evdata.boxplot(column='cre_range_d',by='year',figsize=(7,4.45)).get_figure().sav
 evdata.boxplot(column='cre_range_d',figsize=(4,8)).get_figure().savefig('create-boxl.png',dpi=300,bbox_inches='tight')
 
 #按照正负数分别画直方图
-pocen = positive.get_group(True)['cre_range_d']
-hispo = pocen[pocen<60].plot.hist(
-    bins=50,figsize=(8,5),
-    xticks=[0,1,2,3,4,5,6,7,8,9,10,15,20,25,30,35,40],
+hispo = pocen[pocen<30].plot.hist(
+    bins=22,figsize=(6,5),
+    xticks=[0,1,2,3,4,5,6,7,8,9,10,15,20],
     edgecolor="white",
     linewidth=0.4
                 )
@@ -1035,7 +1036,7 @@ hispo = pocen[pocen<60].plot.hist(
 #                         edgecolor="white",
 #                         linewidth=0.4
 #                 )
-hispo.get_figure().savefig('his-pos<60.png',dpi=300,bbox_inches='tight') #,grid=True
+hispo.get_figure().savefig('his-pos<30.png',dpi=300,bbox_inches='tight') #,grid=True
 
 #找出箱形图的对应值
 # 计算 四分位差
