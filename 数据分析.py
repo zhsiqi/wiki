@@ -736,7 +736,7 @@ dfm.to_csv('events+timestamp+evtype.csv',index=True)
 dfm.to_excel('events+timestamp+evtype.xlsx',index=True)
 
 
-#又是历久弥新的时间格式不匹配事件
+#又是历久弥新的时间格式不匹配事件 
 df = pd.read_csv('events+timestamp+evtype.csv',index_col=0)
 
 df.to_sql('events', conn, index=True, if_exists = 'replace')    
@@ -769,11 +769,249 @@ edi_end_mean.to_excel('edi_end_mean.xlsx',sheet_name='test_new',index=True)
 df['edi_start'].mean() #Timestamp('2015-10-01 18:03:02.752293632')
 df['edi_end'].mean() #Timestamp('2022-04-14 04:40:40.733945088')
 
+#时间跨度箱图，只差注释
+df.boxplot(column='edi_range_y',by='year',figsize=(7,4.45)).get_figure().savefig('box2023-02-17.png',dpi=300,bbox_inches='tight')
+
+
 # 写入已有Excel文件的新表单
 # writer = pd.ExcelWriter('model_predict.xlsx',mode='a', engine='openpyxl',if_sheet_exists='new')
 # df.to_excel(writer, sheet_name='sheet1')
 # writer.save()
 # writer.close()
+
+#%%编辑动态 2023-02-17
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+from datetime import datetime
+import matplotlib.pyplot as plt
+
+import seaborn as sns
+plt.rc('font',family='Times New Roman')
+#提高行内plot显示清晰度
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('retina')
+
+
+dfall = pd.read_excel('events+timestamp+evtype+range.xlsx')
+
+#去除拉伸开始时间的词条
+df = dfall[pd.isna(dfall['del_edi_range'])]
+
+#又是历久弥新的时间格式转换
+df.edi_start = pd.to_datetime(df['edi_start'])
+df.edi_end = pd.to_datetime(df['edi_end'])
+
+df.edi_range = pd.NaT
+df.edi_range = df['edi_end'] - df['edi_start']
+df.edi_range = pd.to_timedelta(df['edi_range'])
+
+df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y')
+
+#词条年均的编辑数量
+df['edi_by_year'] = df['editcount']/df['edi_range_y']
+
+#按年分组
+grouped = df.groupby('year')
+
+#编辑历史时间跨度
+gr_des = grouped.describe()
+gr_des.to_excel('gr_des_2023-02-17.xlsx', index=True)
+
+#词条编辑起止时间平均值
+edi_end_mean = grouped.agg({'edi_start':'mean','edi_end':'mean'})
+edi_end_mean.to_excel('edi_end_mean_023-02-17-1.xlsx',sheet_name='test_new',index=True)
+
+
+#所有的词条编辑起止时间均值
+df['edi_start'].mean() #Timestamp('2015-11-18 11:51:23.097345024')
+df['edi_end'].mean() #Timestamp('2022-04-09 18:35:25.374449408')
+alldescribe = df.describe()
+alldescribe.to_excel('all_des_2023-02-17-1.xlsx', index=True)
+
+
+df.to_excel('year_edirange.xlsx',index=True)
+
+
+multic = pd.cut(df['edi_by_year'], bins=[0,1,6,12,24,36,np.inf])
+multigr3_des = df['edi_by_year'].groupby(multic).describe()
+multigr3_des.to_excel('edibyyear_multi_des.xlsx', index=True)
+
+
+grtime = df.groupby(multic)
+for name, gr in grtime:
+    print(name)
+    print(gr['entry'][1:15])
+
+timegr1 = grtime.get_group('(0.0, 1.0]')
+
+
+# 写入已有Excel文件的新表单
+# writer = pd.ExcelWriter('model_predict.xlsx',mode='a', engine='openpyxl',if_sheet_exists='new')
+# df.to_excel(writer, sheet_name='sheet1')
+# writer.save()
+# writer.close()
+#时间跨度箱图，只差注释
+df.boxplot(column='edi_range_y',by='year',figsize=(7,4.45)).get_figure().savefig('box2023-02-17.png',dpi=300,bbox_inches='tight')
+
+#词条年均的编辑数量箱图
+df.boxplot(column='edi_by_year',by='year',figsize=(7,4.45)).get_figure().savefig('box-evry2023-02-17.png',dpi=300,bbox_inches='tight')
+
+dfediy = df[df['edi_by_year']<40] #每年编辑次数少于40
+dfediy.boxplot(column='edi_by_year',by='year',figsize=(7,4.45)).get_figure().savefig('box1-evry2023-02-17.png',dpi=300,bbox_inches='tight')
+
+#直方图
+dfediy.edi_by_year.hist(bins=36)
+dfediy['edi_by_year'][dfediy.edi_by_year<1].count() #16个
+
+#动态分布 热力图
+dfedi = pd.read_csv('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/edithistory02-14-14-25sql.csv')
+dfedi.update_time = pd.to_datetime(dfedi['update_time'])
+
+dfedi["Year"] = dfedi['update_time'].dt.year.astype(int)
+dfedi["Month"] = dfedi['update_time'].dt.month.astype(int)
+
+#按年月两个维度进行数据透视
+entrygr = dfedi.groupby('entry')
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/图表输出/热力图')
+
+maxli = []
+
+i=1
+for name, group in entrygr:
+    htable = group.groupby(["Year", "Month"]).agg({'entry':'count'})
+    htable1 = htable.pivot_table(index='Year', columns='Month', values='entry').fillna(0).astype(int)
+    maxcount = np.max(np.array(htable1))
+    #maxli.append(np.max(np.array(htable1)))
+    
+    f, ax = plt.subplots(figsize=(8, 8))
+    sns.heatmap(data=htable1,cmap="Blues",square=True,
+                annot=True,
+                #vmin=0, vmax=231, #这个最大值是遍历找出来的
+                annot_kws={"fontsize":10},
+                fmt='.3g', #显示完整三位数标注
+                linewidths=1,ax=ax) #sns.set_context({"figure.figsize":(8,8)})
+    ax.set_xlabel("Month",fontsize=15)
+    ax.set_ylabel("Year",fontsize=15)
+    ax.tick_params(axis='both', which='both', length=0) #短横线（tick）好丑，去掉
+    ax.xaxis.tick_top()
+    plt.yticks(size = 11)
+    plt.xticks(size = 11)
+    for t in ax.texts:
+        if float(t.get_text())>0:
+            t.set_text(t.get_text()) #if the value is greater than 0.4 then I set the text 
+        else:
+            t.set_text("") # if not it sets an empty text
+    eid = group['event_id'].iloc[0] #取出事件id
+    filename = str(eid) +' - ' + name+'.png'
+    plt.savefig(filename,dpi=300,bbox_inches='tight')
+    #plt.show()
+    print(filename)
+    i+=1
+    # if i > 30:
+    #     break
+#print('月最大值是',max(maxli))
+#最大数分布
+maxdata = pd.DataFrame(maxli, columns = ['a'])
+maxdata.a.value_counts()
+
+#按年一个维度进行数据透视
+entrygr = dfedi.groupby('entry')
+
+for name, group in entrygr:
+    htable = group.groupby("Year").agg({'entry':'count'})
+    htable1 = htable.pivot_table(index='Year', columns='Month', values='entry').fillna(0).astype(int)
+    sns.set_context({"figure.figsize":(8,8)})
+    #sns.heatmap(data=htable1,square=True)
+    sns.heatmap(data=htable1,cmap="Blues",square=True)
+    
+    print(name)
+
+
+
+
+#pandas success
+year_edi_range = table.plot.hist(subplots=True, layout=(4, 3),
+                                  figsize=(20,26),sharex=False,
+                                  fontsize=20)
+
+
+#
+multi = pd.cut(dfediy['edi_by_year'], bins=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,np.inf])
+multigr_des = dfediy['edi_by_year'].groupby(multi).describe()
+
+multia = pd.cut(dfediy['edi_by_year'], bins=[0,1,2,4,6,8,12,24,np.inf])
+multigr1_des = dfediy['edi_by_year'].groupby(multia).describe()
+
+multib = pd.cut(dfediy['edi_by_year'], bins=[0,1,6,12,24,np.inf])
+multigr2_des = dfediy['edi_by_year'].groupby(multib).describe()
+
+multigr2_des.to_excel('edibyyear_multi_des.xlsx', index=True)
+#%% 参考资料 2023-02-18
+import pandas as pd
+import numpy as np
+import os
+import sqlite3 as sqlite
+import re
+from datetime import datetime
+import matplotlib.pyplot as plt
+
+import seaborn as sns
+plt.rc('font',family='Times New Roman')
+#提高行内plot显示清晰度
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('retina')
+
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0217')
+dfc = pd.read_csv('ci初稿.csv')
+evci = dfc.groupby('entry').describe()
+
+allcides = evci['reference_count'].describe()
+allcides.to_excel('allci_des.xlsx',index=True)
+
+#又是历久弥新的时间格式转换
+dfc.cite_time = dfc['cite_time'].replace(regex =['日期2020-6-6'], value = '2020-06-06')
+dfc.pub_time = pd.to_datetime(dfc['pub_time'])
+dfc.cite_time = pd.to_datetime(dfc['cite_time'])
+dfc.one_citime = pd.to_datetime(dfc['one_citime'])
+dfc.finestamp = pd.to_datetime(dfc['finestamp'])
+
+
+dfc.time_di = pd.NaT
+dfc.time_di = dfc['cite_time'] - dfc['pub_time']
+dfc.time_di = pd.to_timedelta(dfc['time_di'])
+
+dfc.time_di = dfc['time_di'].replace(regex =['日期2020-6-6'], value = '2020-06-06')
+
+dfc['fine_di'] = dfc['one_citime'] - dfc['finestamp']
+dfc.fine_di = pd.to_timedelta(dfc['fine_di'])
+
+dfc['fine_di_d'] = dfc['fine_di'] / np.timedelta64(1, 'D')
+dfc['time_di_d'] = dfc['time_di'] / np.timedelta64(1, 'D')
+
+dfc.loc[dfc['time_di_d']<0,'time_di_d'] = np.nan
+
+multi_ci = pd.cut(dfc['time_di_d'], bins=[0,1,7,30,365,np.inf], include_lowest=True)
+multi_ci_des = dfc['time_di_d'].groupby(multi_ci).describe()
+
+multi_ci_des.to_excel('citedi_multi_des.xlsx', index=True)
+
+dfc['time_di_d'].describe()
+# count    4985.000000
+# mean      133.412839
+# std       456.468312
+# min         0.000000
+# 25%         0.000000
+# 50%         0.000000
+# 75%         3.000000
+# max      5235.000000
+dfc['time_di_d'][dfc['time_di_d']<7].hist(bins=7)
+
+
+dfc.boxplot(column=('time_di_d'))
 
 
 #%% 画图(时间趋势\)
@@ -1077,7 +1315,9 @@ chist.get_figure().savefig('create+histcenter17-1.png',dpi=300,bbox_inches='tigh
 evdata['cre_range_d'].plot.hist(bins=40,figsize=(5,5),
                                 edgecolor="white",
                                 linewidth=0.4).get_figure().savefig('createhistalll4.png',dpi=300,bbox_inches='tight')
+#%% 
 
+'/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0217/0217events.xlsx'
 
 
 #%%还是pandas 终于成功版。。。。
