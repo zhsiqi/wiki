@@ -1,4 +1,24 @@
+*导入csv, utf-8编码
+import delimited year_edirange.csv, encoding(UTF-8)
 
+*年份和编辑历史跨度的相关与回归
+
+logout, save(stat_edi_pwcor) word excel replace: ///
+pwcorr year edi_range_y, sig star(0.05)
+ 
+ 
+scatter edi_range_y year
+reg edi_range_y year
+predict yhat, xb
+predict resid, r
+sum resid
+sum edi_range_y yhat
+gen sres = res/1.4829
+twoway (scatter sres year), yline(0)
+
+
+*-------
+ 
  
 recode editcount(-99=.)
 recode viewcount(-99=.)
