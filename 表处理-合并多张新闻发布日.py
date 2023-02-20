@@ -168,23 +168,7 @@ dif2 = rrule.rrule(rrule.DAILY, dtstart=parse(ti2), until=parse(ti1)).count()
 print(dif2)
 
 
-#%% status_code 修正，后面有空再说
-
-
-
-#%% cnOCR
-
-
-from cnocr import CnOcr
-
-img_fp = '/Users/zhangsiqi/Desktop/毕业论文代码mini/test.png'
-ocr = CnOcr(det_model_name='naive_det')  # 所有参数都使用默认值
-out = ocr.ocr(img_fp)
-
-print(out)
-
-
-#%%
+#%%最后看一下数据的
 notici = pd.isna(df['cite_time']).sum()
 print('引用时间缺失',notici)
 

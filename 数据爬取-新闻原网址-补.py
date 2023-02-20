@@ -5,6 +5,9 @@ Created on Tue Feb 14 16:01:02 2023
 
 @author: zhangsiqi
 """
+"""
+新增加了词条，在redirect链接基础上得到参考资料原始UR
+"""
 
 import pandas as pd
 from selenium.common.exceptions import TimeoutException

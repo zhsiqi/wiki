@@ -4,7 +4,54 @@
 Created on Thu Feb  9 13:21:32 2023
 
 @author: zhangsiqi
+上面一部分是发布日期，下面是发布时间戳
 """
+#%%利用htmldate得到发布日
+#%% htmldate模块取参考资料的发布日期
+import re
+from urllib.parse import urlparse
+import requests
+import pandas as pd
+import numpy as np
+import sqlite3 as sqlite
+import os
+from htmldate import find_date
+
+#os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
+os.chdir('/Volumes/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
+
+df = pd.read_csv('citation+news-nhc-6.csv',index_col=('Unnamed: 0'))
+df['htmldate_ori'] = ''
+df['htmldate_upd'] = ''
+df['url_time'] = '' #之前得到的时间删除，重新解析时间
+
+for index, row in df.iterrows():
+    url = row['origin_url']
+    if pd.isna(url) == False:
+        try:
+            date = find_date(url, original_date=True)
+            date1 = find_date(url, original_date=False)
+        except ValueError:
+            df.at[index, 'htmldate_ori'] = 'error'
+            df.at[index, 'htmldate_upd'] = 'error'
+            print(index,url,'error')
+            continue
+        else:
+            df.at[index, 'htmldate_ori'] = date
+            df.at[index, 'htmldate_upd'] = date1
+            print(index,url,date)
+
+#os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0125补充htmldate时间')
+os.chdir('/Volumes/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0125补充htmldate时间')
+
+df.to_csv("citation+html2date.csv",index=True)
+
+conn3= sqlite.connect('citation+html2date.sqlite')
+df.to_sql('citation+htmldate', conn3, index=True, if_exists = 'replace')
+conn3.close()
+
+
+#%%利用htmldate得到具体时间戳，请直接跳到下一节，因为本小节浪费大量时间
 import os
 import pandas as pd
 import sqlite3 as sqlite
@@ -114,7 +161,7 @@ print(a)
 # date = find_date(url, outputformat='%Y-%m-%d %H:%M')
 # date1 = find_date(url1, outputformat='%Y-%m-%d %H:%M')
 
-#%% 干脆全部跑一次
+#%% 干脆直接全部跑一次，不要事先判断哪些对，哪些不对
 import os
 import pandas as pd
 import sqlite3 as sqlite
@@ -152,7 +199,7 @@ df.to_sql('citation_time', conn3, index=True, if_exists = 'replace')
 conn3.close()
 
 #%%
-#手动查看数据后在sql文件中修改了一些错误值,合并一下数据
+#手动查看跑出来的结果后在sql文件中修改了一些错误值,合并一下数据
 import os
 import pandas as pd
 import sqlite3 as sqlite
