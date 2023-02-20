@@ -14,9 +14,9 @@ import os
 
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间')
 plt.rc('font',family='Times New Roman')
-#提高行内plot显示清晰度
+
 from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('retina')
+set_matplotlib_formats('retina') #提高行内plot显示清晰度
 
 df = pd.read_excel('events+timestamp+evtype+range+event.xlsx',index_col=0)
 
@@ -27,14 +27,6 @@ df.edi_end = pd.to_datetime(df['edi_end'])
 df.docu_start = pd.to_datetime(df['docu_start'])
 
 df.create_range = pd.NaT
-# #数据表按年分组,描述编辑间隔
-# grouped = df.groupby('year')
-# #编辑历史时间跨度：数据描述
-# gr_des = grouped.describe()
-# gr_des.to_excel('gr_des_5.xlsx', index=True)
-# # = grouped['edi_range_y'].median()
-# alldescribe = df.describe()
-# alldescribe.to_excel('all_des_6.xlsx', index=True)
 
 #2023-02-13按事件找到最早的词条编辑时间
 
@@ -114,7 +106,7 @@ hispo = pocen[pocen<30].plot.hist(
 #                         edgecolor="white",
 #                         linewidth=0.4
 #                 )
-hispo.get_figure().savefig('his-pos<30.png',dpi=300,bbox_inches='tight') #,grid=True
+hispo.get_figure().savefig('his-pos<30.png',dpi=300,bbox_inches='tight') #,grid=True 保存pandas的图
 
 #找出箱形图的对应值
 # 计算 四分位差
@@ -167,40 +159,37 @@ import matplotlib.pyplot as plt
 
 import seaborn as sns
 plt.rc('font',family='Times New Roman')
-#提高行内plot显示清晰度
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('retina')
 
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('retina') #提高行内plot显示清晰度
 
 dfall = pd.read_excel('events+timestamp+evtype+range.xlsx')
 
 #去除拉伸开始时间的词条
 df = dfall[pd.isna(dfall['del_edi_range'])]
 
-#又是历久弥新的时间格式转换
+#时间格式转换
 df.edi_start = pd.to_datetime(df['edi_start'])
 df.edi_end = pd.to_datetime(df['edi_end'])
 
+#生成变量
 df.edi_range = pd.NaT
 df.edi_range = df['edi_end'] - df['edi_start']
 df.edi_range = pd.to_timedelta(df['edi_range'])
+df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y') #词条的编辑历史事件跨度：年
+df['edi_by_year'] = df['editcount']/df['edi_range_y'] #词条年均的编辑数量
 
-df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y')
-
-#词条年均的编辑数量
-df['edi_by_year'] = df['editcount']/df['edi_range_y']
-
-#按年分组
+#==============描述编辑历史时间跨度===============
+#按年分组数据
 grouped = df.groupby('year')
 
-#编辑历史时间跨度，整体描述
+#编辑历史时间跨度，按年分组描述
 gr_des = grouped.describe()
 gr_des.to_excel('gr_des_2023-02-17.xlsx', index=True)
 
-#词条编辑起止时间平均值
+#每年：词条编辑的起止时间点的平均值
 edi_end_mean = grouped.agg({'edi_start':'mean','edi_end':'mean'})
 edi_end_mean.to_excel('edi_end_mean_023-02-17-1.xlsx',sheet_name='test_new',index=True)
-
 
 #所有的词条编辑起止时间均值
 df['edi_start'].mean() #Timestamp('2015-11-18 11:51:23.097345024')
@@ -208,32 +197,19 @@ df['edi_end'].mean() #Timestamp('2022-04-09 18:35:25.374449408')
 alldescribe = df.describe()
 alldescribe.to_excel('all_des_2023-02-17-1.xlsx', index=True)
 
+#每年度的时间跨度的箱图，只差注释
+df.boxplot(column='edi_range_y',by='year',figsize=(7,4.45)).get_figure().savefig('box2023-02-17.png',dpi=300,bbox_inches='tight')
 
 df.to_excel('year_edirange.xlsx',index=True)
-
-
-multic = pd.cut(df['edi_by_year'], bins=[0,1,6,12,24,36,np.inf])
-multigr3_des = df['edi_by_year'].groupby(multic).describe()
-multigr3_des.to_excel('edibyyear_multi_des.xlsx', index=True)
-
-
-grtime = df.groupby(multic)
-for name, gr in grtime:
-    print(name)
-    print(gr['entry'][1:15])
-
-timegr1 = grtime.get_group('(0.0, 1.0]')
-
 
 # 写入已有Excel文件的新表单
 # writer = pd.ExcelWriter('model_predict.xlsx',mode='a', engine='openpyxl',if_sheet_exists='new')
 # df.to_excel(writer, sheet_name='sheet1')
 # writer.save()
 # writer.close()
-#每年度的时间跨度箱图，只差注释
-df.boxplot(column='edi_range_y',by='year',figsize=(7,4.45)).get_figure().savefig('box2023-02-17.png',dpi=300,bbox_inches='tight')
 
-#词条年均的编辑数量箱图
+#=================词条年均的编辑次数============
+#箱图
 df.boxplot(column='edi_by_year',by='year',figsize=(7,4.45)).get_figure().savefig('box-evry2023-02-17.png',dpi=300,bbox_inches='tight')
 
 dfediy = df[df['edi_by_year']<40] #每年编辑次数少于40
@@ -243,23 +219,42 @@ dfediy.boxplot(column='edi_by_year',by='year',figsize=(7,4.45)).get_figure().sav
 dfediy.edi_by_year.hist(bins=36)
 dfediy['edi_by_year'][dfediy.edi_by_year<1].count() #16个
 
-#动态分布 热力图
+#按数值分组
+multi = pd.cut(dfediy['edi_by_year'], bins=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,np.inf])
+multigr_des = dfediy['edi_by_year'].groupby(multi).describe()
+
+multic = pd.cut(df['edi_by_year'], bins=[0,1,6,12,24,36,np.inf])
+multigr3_des = df['edi_by_year'].groupby(multic).describe()
+multigr3_des.to_excel('edibyyear_multi_des.xlsx', index=True)
+
+grtime = df.groupby(multic)
+for name, gr in grtime:
+    print(name)
+    print(gr['entry'][1:15])
+
+timegr1 = grtime.get_group('(0.0, 1.0]') #不知道为啥老报错
+
+#================编辑热度动态分布 热力图===================
 dfedi = pd.read_csv('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/edithistory02-14-14-25sql.csv')
 dfedi.update_time = pd.to_datetime(dfedi['update_time'])
 
+#生成年月数据，后面热力图二维数据用
 dfedi["Year"] = dfedi['update_time'].dt.year.astype(int)
 dfedi["Month"] = dfedi['update_time'].dt.month.astype(int)
 
-#按年月两个维度进行数据透视
+#所有编辑记录按词条条目分组
 entrygr = dfedi.groupby('entry')
 
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/图表输出/热力图')
 
 maxli = []
 
+#绘制每个事件编辑动态的热力图
 i=1
 for name, group in entrygr:
+    #首先聚合该词条的每年每月的编辑总数（也即任何一个变量的计数），得到的结果是只有一列但超多行的长条数据，且索引有俩，先是年再是月
     htable = group.groupby(["Year", "Month"]).agg({'entry':'count'})
+    #对上面的长条数据，制作透视图，年作为索引行，月作为列，这样从长条数据变成了方形的
     htable1 = htable.pivot_table(index='Year', columns='Month', values='entry').fillna(0).astype(int)
     maxcount = np.max(np.array(htable1))
     #maxli.append(np.max(np.array(htable1)))
@@ -271,12 +266,15 @@ for name, group in entrygr:
                 annot_kws={"fontsize":10},
                 fmt='.3g', #显示完整三位数标注
                 linewidths=1,ax=ax) #sns.set_context({"figure.figsize":(8,8)})
-    ax.set_xlabel("Month",fontsize=15)
-    ax.set_ylabel("Year",fontsize=15)
+    ax.set_xlabel("Month",fontsize=16)
+    ax.xaxis.set_label_position('top')
+    ax.set_ylabel("Year",fontsize=16)
+    ax.tick_params(axis="x", labelsize=13)#修改坐标轴上数字大小
+    ax.tick_params(axis="y", labelsize=13)
     ax.tick_params(axis='both', which='both', length=0) #短横线（tick）好丑，去掉
-    ax.xaxis.tick_top()
-    plt.yticks(size = 11)
-    plt.xticks(size = 11)
+    ax.xaxis.tick_top() #月份数字移到上面
+    # plt.yticks(size = 11)
+    # plt.xticks(size = 11)
     for t in ax.texts:
         if float(t.get_text())>0:
             t.set_text(t.get_text()) #if the value is greater than 0.4 then I set the text 
@@ -291,11 +289,12 @@ for name, group in entrygr:
     # if i > 30:
     #     break
 #print('月最大值是',max(maxli))
-#最大数分布
+
+#一个月的编辑次数的最大数分布
 maxdata = pd.DataFrame(maxli, columns = ['a'])
 maxdata.a.value_counts()
 
-#按年一个维度进行数据透视
+#=====想尝试按年一个维度进行数据透视化热力图，那其实就是柱状图啊！！！
 entrygr = dfedi.groupby('entry')
 
 for name, group in entrygr:
@@ -308,25 +307,6 @@ for name, group in entrygr:
     print(name)
 
 
-
-
-#pandas success
-year_edi_range = table.plot.hist(subplots=True, layout=(4, 3),
-                                  figsize=(20,26),sharex=False,
-                                  fontsize=20)
-
-
-#
-multi = pd.cut(dfediy['edi_by_year'], bins=[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,np.inf])
-multigr_des = dfediy['edi_by_year'].groupby(multi).describe()
-
-multia = pd.cut(dfediy['edi_by_year'], bins=[0,1,2,4,6,8,12,24,np.inf])
-multigr1_des = dfediy['edi_by_year'].groupby(multia).describe()
-
-multib = pd.cut(dfediy['edi_by_year'], bins=[0,1,6,12,24,np.inf])
-multigr2_des = dfediy['edi_by_year'].groupby(multib).describe()
-
-multigr2_des.to_excel('edibyyear_multi_des.xlsx', index=True)
 #%% 参考资料的引用速度 2023-02-18
 import pandas as pd
 import numpy as np
@@ -397,28 +377,36 @@ plt.rc('font',family='Times New Roman')
 #编辑历史数据透视表
 table = df.pivot_table(index='entryindex',columns='year',values='edi_range_y')
 
+#全局修改legend大小
+plt.rc('legend',fontsize=10) # using a size in points
+#全局坐标轴label的大小
+plt.rcParams['axes.labelsize'] = 10
+
 #pandas success
 year_edi_range = table.plot.hist(subplots=True, layout=(4, 3),
-                                  figsize=(20,26),sharex=False,
-                                  fontsize=20,grid=True)
-
+                                  figsize=(9,12),sharex=False,sharey=True,
+                                  fontsize=10,grid=True) #这里的fontsize是坐标轴上的数字大小
 #(1)上面等价于table.plot(kind='hist', ....)
-#（2）legend显得很小，因为figsize很大，如果figsize设置为(9,12)或者（10，13.5），legend大小很舒服
 
 #我搞不懂啊，为什么下面这样取出来的是一整张图，这不是取的第一个和第6个子图吗？通过测试证明，里面数字怎么取都不影响
-year_edi_range[0,0].get_figure().savefig('name+3',dpi=300,bbox_inches='tight')
-year_edi_range[2,2].get_figure().savefig('[2+2]',dpi=300,bbox_inches='tight')
+fig1 = year_edi_range[0,0].get_figure()
+fig2 = year_edi_range[2,2].get_figure()
 
-#继续整活、学习ax的
+#加上主标题
+fig1.suptitle("This Main Title is Nicely Formatted", fontsize=15, y=0.91) #y=0.93控制主标题的位置
+
+fig1.savefig('name+3',dpi=300,bbox_inches='tight')
+fig2.savefig('[2+2]',dpi=300,bbox_inches='tight')
 
 
-ax = table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
+#继续整活、学习ax
+ax = table.plot(subplots=True, kind='hist', grid=True, legend=True, 
            sharex=True, sharey=True, figsize=(9,12),
            layout=(4,3))
 
 ax.set_title('5 plots')#这样会报错：'numpy.ndarray' object has no attribute 'set_title'
 
-plt.title('5 plots') #一个大空白图有了标题5 plots
+plt.title('5 plots') #一个大空白图弹出来有了标题5 plots
 
 ax[0,0].set_title('5 plots') #这样也不会有任何的标题显示出来
 
@@ -434,14 +422,136 @@ fig.get_axes()
 fig1.get_axes()
 fig2.get_axes()
 
-ax[3,2].set_title('5 plots') 
-#控制台 直接 ax 查看，这样给最后一个子图增加了标题
+#主标题
+fig.suptitle("This Main Title is Nicely Formatted", fontsize=16, y=0.93) #y=0.93控制主标题的位置
 
-fig, axes = plt.subplots(4,3)
+ax[3,2].set_title('5 plots') #控制台 直接 ax 查看，这样给最后一个子图增加了标题
+
+fig.savefig('test.png')
+
+#===============将matplotlib的ax对象传给pandas绘图，pandas 4，3分布
+fig, axes = plt.subplots(figsize=(9,12)) #此时显示一张空白只有坐标轴的图，axes = <AxesSubplot:>.
+#constrained_layout=True 子图紧密
+print(id(fig)) #11402447936
+print(id(axes)) #6319810880
+print(id(fig.get_axes())) #11402452096
 
 test = table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
            sharex=True, sharey=True, figsize=(9,12),
-           layout=(4,3),ax=axes) #test是数组，axes不是数组
+           layout=(4,3),ax=axes) #test是数组，axes不是数组 
+#UserWarning: To output multiple subplots, the figure containing the passed axes is being cleared.
+axes.set(title='test')
+plt.show()
+
+print(id(fig)) #11402447936
+print(id(axes)) #6319810880
+print(id(fig.get_axes())) #11340099008 此时的fig对应的axes已经变了
+
+fig #显示pandas画好的11个直方图，所以上面那个warning是不是就是说原来的那张空白坐标图被替换成直方图了
+axes #仍然显示 <AxesSubplot:>.
+
+axes.get_figure() #显示pandas画好的11个直方图
+print(id(axes.get_figure())) #11402447936
+print(id(test[0,0].get_figure())) #11402447936
+
+axes.set_ylabel('tets')
+axes.set_title('whither +++ plots')
+
+print(id(fig)) #11402447936
+print(id(axes)) #6319810880
+print(id(fig.get_axes())) #11501859584 变了！
+print(id(axes.get_figure())) #11402447936 没变
+print(id(test[0,0].get_figure())) #11402447936 没变
+
+axes #显示<AxesSubplot:title={'center':'whither +++ plots'}, ylabel='tets'>
+
+fig #直方图没有显示上面加的ylable 和 title
+
+fig.get_axes() #等价于fig.axes
+#显示
+# [<AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>]
+
+test[2,1].set_title('5 plots')
+fig.suptitle('Errorbar subsampling') 
+fig#这样又有一个顶端的大标题和子图的标题了
+
+fig.axes
+# [<AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:title={'center':'5 plots'}, ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>,
+#  <AxesSubplot:ylabel='Frequency'>]
+
+print(id(fig)) #11402447936
+print(id(axes.get_figure())) #11402447936 没变
+print(id(test[0,0].get_figure())) #11402447936 没变
+
+print(id(axes)) #6319810880
+print(id(fig.get_axes())) #11501859584 id没变但是值变了？？
+
+
+axes.get_title() #输出whither plots，不懂它去哪里了
+
+#此时控制台axes:<AxesSubplot:title={'center':'whither +++ plots'}>
+
+
+#===============将matplotlib的ax对象传给pandas绘图，pandas 11，1分布
+fig, axes = plt.subplots()
+
+test = table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
+           sharex=True, sharey=True, figsize=(9,12),
+           layout=(11,1),ax=axes) #test是数组，axes不是数组
+
+axes.set_ylabel('tets')
+axes.set_title('whither +++ plots')
+
+test[3,0].set_title('5 plots')
+fig.suptitle('Errorbar subsampling') #这样又有一个顶端的大标题了
+axes.get_title() #输出whither+++ plots，不懂它去哪里了
+
+#此时控制台axes:<AxesSubplot:title={'center':'whither +++ plots'}>
+#此时控制台fig：一张图没有whither的title
+
+axes.figure #也没有whither的title
+
+fig.get_axes() #也没有显示哪个subplot有whither plot这个标题，ylable也是没有的
+
+plt.show()
+
+#==============将matplotlib的ax对象传给pandas绘图，ax采用4，3
+fig, axes = plt.subplots(4,3) #得到的图是12个只有坐标轴的空白子图，axes是一个二维的数组
+fig.delaxes(axes[3,2]) #删除多余的子图,现在查看fig只有11个个空白子图了,但是axes仍然是12个！
+#所以要继续删除多的axes
+axes = axes.flat[:11] #把二维的axes压扁，然后通过切片只取出需要数量的，也即删除多余的一个axes.现在axes只有11个元素了
+
+   # axs = axs.flat
+   #  for ax in axs[N:]:
+   #      ax.remove()
+   #  return axs[:N]
+
+test = table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
+           figsize=(9,12),
+           layout=(3,4),ax=axes) #test是数组，axes不是数组#注意：当传递多个axes时，pandas里面设置的layoit无效。When passing multiple axes, layout keyword is ignored.
+
+test# 显示为一个一维的11个元素的数组
 
 axes.set_ylabel('tets')
 axes.set_title('whither +++ plots')
@@ -458,6 +568,20 @@ axes.figure #也没有whither的title
 fig.get_axes() #也没有显示哪个subplot有whither plot这个标题
 
 plt.show()
+
+
+#==============如果ax不是4，3分布,是11，1分布呢
+fig, axes = plt.subplots(11,1) #此时的axes是数组 'numpy.ndarray' object
+
+test = table.plot(subplots=True, kind='hist', grid=True, legend=True, stacked=False, 
+           sharex=True, sharey=True, figsize=(20,12),
+           ax=axes) #test是数组，axes不是数组,此时pandas里面的layout设置为4，3就没用了，还是11，1
+
+axes[2].set_ylabel('tets') #此时的axes是数组 'numpy.ndarray' object，不可以直接调用 set_title
+axes[3].set_title('whither +++ plots')
+
+test[5].set_title('5 plots') #这个改了之后axes也跟着变了
+fig.suptitle('Errorbar subsampling') #这样又有一个顶端的大标题了
 
 #%%matplot绘制多个箱形图，没有pandas好看
 import matplotlib.pyplot as plt
