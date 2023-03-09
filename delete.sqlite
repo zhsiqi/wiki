@@ -1,0 +1,147 @@
+--删除疫情2022 --
+--SELECT *,rowid "NAVICAT_ROWID" FROM "main"."citation" WHERE "entry" = '2021年新型冠状病毒疫情'
+DELETE FROM "main"."citation" WHERE "entry" = '2022年新型冠状病毒疫情';
+UPDATE "main"."citation" SET "year" = 2021 WHERE "entry" = '2021年新型冠状病毒疫情';
+UPDATE "main"."citation" SET "year" = 2020 WHERE "entry" = '2020年新型冠状病毒疫情';
+
+DELETE FROM "main"."edithistory" WHERE "entry" = '2022年新型冠状病毒疫情';
+UPDATE "main"."edithistory" SET "year" = 2021 WHERE "entry" = '2021年新型冠状病毒疫情';
+UPDATE "main"."edithistory" SET "year" = 2020 WHERE "entry" = '2020年新型冠状病毒疫情';
+
+DELETE FROM "main"."events" WHERE "entry" = '2022年新型冠状病毒疫情';
+UPDATE "main"."events" SET "year" = 2021 WHERE "entry" = '2021年新型冠状病毒疫情';
+UPDATE "main"."events" SET "year" = 2020 WHERE "entry" = '2020年新型冠状病毒疫情';
+
+DELETE FROM "main"."topeditor" WHERE "entry" = '2022年新型冠状病毒疫情';
+UPDATE "main"."topeditor" SET "year" = 2021 WHERE "entry" = '2021年新型冠状病毒疫情';
+UPDATE "main"."topeditor" SET "year" = 2020 WHERE "entry" = '2020年新型冠状病毒疫情';
+
+DELETE FROM "main"."wikilink" WHERE "entry" = '2022年新型冠状病毒疫情';
+UPDATE "main"."wikilink" SET "year" = 2021 WHERE "entry" = '2021年新型冠状病毒疫情';
+UPDATE "main"."wikilink" SET "year" = 2020 WHERE "entry" = '2020年新型冠状病毒疫情';
+
+DELETE FROM "main"."wikitext" WHERE "entry" = '2022年新型冠状病毒疫情';
+UPDATE "main"."wikitext" SET "year" = 2021 WHERE "entry" = '2021年新型冠状病毒疫情';
+UPDATE "main"."wikitext" SET "year" = 2020 WHERE "entry" = '2020年新型冠状病毒疫情';
+
+--删除重复词条--
+--2016年二十国集团领导人峰会
+--2016年二十国集团中国峰会
+
+DELETE FROM "main"."citation" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."edithistory" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."events" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."topeditor" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."wikilink" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."wikitext" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."ci" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."citations" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."relevance" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."science" WHERE "entry" = '2016年二十国集团领导人峰会';
+DELETE FROM "main"."wikitext" WHERE "entry" = '2016年二十国集团领导人峰会';
+
+DELETE FROM "main"."citation" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."edithistory" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."events" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."topeditor" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."wikilink" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."wikitext" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."ci" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."citations" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."relevance" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."science" WHERE "entry" = '2016年二十国集团中国峰会';
+DELETE FROM "main"."wikitext" WHERE "entry" = '2016年二十国集团中国峰会';
+
+--删除重复词条--
+--中国共产党成立100周年庆祝活动
+
+DELETE FROM "main"."citation" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."edithistory" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."events" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."topeditor" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."wikilink" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."wikitext" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."ci" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."citations" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."relevance" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."science" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+DELETE FROM "main"."wikitext" WHERE "entry" = '中国共产党成立100周年庆祝活动';
+
+
+--删除重复词条--
+--6·1东方之星号客轮沉没事件
+--6·1东方之星号客轮翻沉事件
+
+DELETE FROM "main"."citation" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."edithistory" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."events" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."topeditor" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."wikilink" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."wikitext" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."ci" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."citations" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."relevance" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."science" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+DELETE FROM "main"."wikitext" WHERE "entry" = '6·1东方之星号客轮沉没事件';
+
+DELETE FROM "main"."citation" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."edithistory" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."events" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."topeditor" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."wikilink" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."wikitext" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."ci" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."citations" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."relevance" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."science" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+DELETE FROM "main"."wikitext" WHERE "entry" = '6·1东方之星号客轮翻沉事件';
+
+--删除重复词条--
+--辱母案
+--辱母杀人案
+
+DELETE FROM "main"."citation" WHERE "entry" = '辱母案';
+DELETE FROM "main"."edithistory" WHERE "entry" = '辱母案';
+DELETE FROM "main"."events" WHERE "entry" = '辱母案';
+DELETE FROM "main"."topeditor" WHERE "entry" = '辱母案';
+DELETE FROM "main"."wikilink" WHERE "entry" = '辱母案';
+DELETE FROM "main"."wikitext" WHERE "entry" = '辱母案';
+DELETE FROM "main"."ci" WHERE "entry" = '辱母案';
+DELETE FROM "main"."citations" WHERE "entry" = '辱母案';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '辱母案';
+DELETE FROM "main"."relevance" WHERE "entry" = '辱母案';
+DELETE FROM "main"."science" WHERE "entry" = '辱母案';
+DELETE FROM "main"."wikitext" WHERE "entry" = '辱母案';
+
+DELETE FROM "main"."citation" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."edithistory" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."events" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."topeditor" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."wikilink" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."wikitext" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."ci" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."citations" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."relevance" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."science" WHERE "entry" = '辱母杀人案';
+DELETE FROM "main"."wikitext" WHERE "entry" = '辱母杀人案';
+
+--删除非事件词条--
+--建党百年
+DELETE FROM "main"."citation" WHERE "entry" = '建党百年';
+DELETE FROM "main"."edithistory" WHERE "entry" = '建党百年';
+DELETE FROM "main"."events" WHERE "entry" = '建党百年';
+DELETE FROM "main"."topeditor" WHERE "entry" = '建党百年';
+DELETE FROM "main"."wikilink" WHERE "entry" = '建党百年';
+DELETE FROM "main"."wikitext" WHERE "entry" = '建党百年';
+DELETE FROM "main"."ci" WHERE "entry" = '建党百年';
+DELETE FROM "main"."citations" WHERE "entry" = '建党百年';
+DELETE FROM "main"."cittion_edtime" WHERE "entry" = '建党百年';
+DELETE FROM "main"."relevance" WHERE "entry" = '建党百年';
+DELETE FROM "main"."science" WHERE "entry" = '建党百年';
+DELETE FROM "main"."wikitext" WHERE "entry" = '建党百年';

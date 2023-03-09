@@ -15,10 +15,15 @@ from os import path
 import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver import ActionChains
+from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import UnexpectedAlertPresentException
 from selenium.common.exceptions import StaleElementReferenceException
-from tenacity import retry, retry_if_exception_type, wait_fixed
+import selenium.common.exceptions
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from tenacity import retry, retry_if_exception_type, wait_fixed
+import numpy as np
 import pandas as pd
 import re
 import sqlite3 as sqlite
@@ -28,17 +33,23 @@ import os
 #import pyttsx3
 
 
-os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据')
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间')
 
 #%% 读取、创建数据库等
-evtable = pd.read_excel('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/events+timestamp+evtype+range+event.xlsx')
-
+evtable = pd.read_excel('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间/events+timestamp+evtype+range.xlsx')
+entryall = evtable['entry'].unique()
 # 创建sql数据库
 #sqname = 'BaiduWiki['+ datetime.datetime.now().strftime('%m-%d-%H:%M].sqlite')
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据')
-conn= sqlite.connect("/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki.sqlite")
+conn= sqlite.connect("/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite")
 c = conn.cursor()
 
+dfedi = pd.read_sql('SELECT * FROM edithistory', conn)
+dfedi_ev = dfedi['entry'].unique()
+
+#%%% 参考资料表单
+# c.execute('''ALTER TABLE ci ADD COLUMN type''') #新增type字段
+          
 # # #%%% 事件表单
 # c.execute('''CREATE TABLE IF NOT EXISTS events 
 #           (entryindex, event_id int, event text, year, entry text, baikelink text, viewcount int, votecount int, 
@@ -85,6 +96,14 @@ def get_elements(driver, method, name):
     #print('获取元素成功')
     return [i.text for i in targets]
 
+# 定义一个捕捉元素时出现StaleElementReferenceException异常后重试的装饰器
+@retry(retry = retry_if_exception_type(StaleElementReferenceException), wait = wait_fixed(3))
+def click_elements(driver, method, name):
+    #print('尝试获取元素',datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),name)
+    targets = driver.find_elements(method, name) #method =By.CLASS_NAME
+    #print('获取元素成功')
+    return [i for i in targets]
+
 #%% 爬虫循环开始
 browser = webdriver.Chrome(executable_path = 'chromedriver')
 
@@ -104,9 +123,13 @@ for index, row in evtable.iterrows():
         entryname = entryname.split('/')[0]
 
     filename = entryname + ".html"  # 保存的文件名
-    if path.exists(filename):  # 检查文件是否存在，若存在就跳过(避免重复文件)
+    # if path.exists(filename):  # 检查文件是否存在，若存在就跳过(避免重复文件)
+    #     continue
+    if entryname.isin(entryall):#如果sqlite的数据出现在eatable中，则跳过
         continue
-
+    if entryname.isin(dfedi_ev): #如果该词条已经收录在sqlite的编辑历史数据表中，则跳过
+        continue
+    
     print('事件', len(evtable),'-', index + 1, entryname)
 
     browser.get(line.strip()) #selenium获取网页
@@ -199,13 +222,13 @@ for index, row in evtable.iterrows():
         conn.commit()
         
     print('百科内链表单done')
-#%%参考资料表单
-    references = browser.find_elements(By.CLASS_NAME, 'reference-item') #不能分开抓序号、标题这些，因为有些为空 
-    
+#%%参考资料表单    
     read_more_btn = browser.find_elements(By.CSS_SELECTOR,'dd.toggle > span.text.expand-text')#展开更多参考资料
     if read_more_btn:
         read_more_btn[0].click()
         time.sleep(1.5)
+    
+    references = browser.find_elements(By.CLASS_NAME, 'reference-item') #不能分开抓序号、标题这些，因为有些为空
     
     if references:
         for ref in references:
@@ -227,8 +250,10 @@ for index, row in evtable.iterrows():
             ref_title = ref.find_element(By.CLASS_NAME,'text').text.strip('．') #参考资料标题
             ref_url = ref.find_element(By.CLASS_NAME,'text').get_attribute('href')#百科的参考资料页面的链接
             ref_links = ref.find_elements(By.CLASS_NAME,'wiki-lemma-icons_reference-link') #找到百科的参考资料页面的链接
+            ref_type = ref.get_attribute('data-type') #参考资料类型
             
-            if ref_links: # 判断参考资料为网页，提取网页相关字段
+            if ref_type=='1':
+#            if ref_links: # 判断参考资料为网页，提取网页相关字段
                 ref_site = ref.find_elements(By.CLASS_NAME,'site') #参考资料网站名字
                 if ref_site:
                     reference_site = ref_site[0].text.strip('．')
@@ -261,63 +286,63 @@ for index, row in evtable.iterrows():
             #写入sql参考资料表单
             ref_values = (index + 1, event_id, eventname, year, entryname, len(references), ref_index, reference_text, ref_title, ref_url,
                           reference_site, source_time, cite_time, redirlink, origilink, None, snapshot_url,
-                          datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                          datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'),ref_type)
             c.execute(''' INSERT INTO ci (entryindex, event_id, event, year, entry, reference_count, reference_entryindex, 
               reference_text, reference_title, reference_url, reference_site, source_time, cite_time, redir_url, original_url, 
-              status_code, snapshot_url, collect_time) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', ref_values)
+              status_code, snapshot_url, collect_time, type) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', ref_values)
     
             conn.commit()
     print('参考资料表单done')
     
 #%%编辑历史表单
-    # if int(editcount) > 0: #有编辑历史则继续
-    #     editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
-    #     reflist = []
-    #     for num in range(1,editpage_nos+1):
-    #         histo_url = editurl + '#page' + str(num)
-    #         edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
-    #         browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
-    #         browser.switch_to.window(browser.window_handles[-1]) #切换窗口
-    #         time.sleep(1.5)
-    #         #一直等待到元素可见
-    #         wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'td')))
-    #         lst = get_elements(browser, By.TAG_NAME, 'td')
-    #         #lst = [td.text for td in versions]
-    #         browser.close() #关闭当前的编辑历史标签页
-    #         browser.switch_to.window(original_window) #回到原初的百科页面
-    #         for j in range(0,int(len(lst)/4)):
-    #             #编辑历史写入sql
-    #             version_values = (index + 1, event_id, eventname, year, entryname, editcount, 25*(num-1)+j+1, lst[4*j+1], 
-    #                               lst[4*j], datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    #             c.execute(''' INSERT INTO edithistory VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', version_values)
-    #             conn.commit()
+    if int(editcount) > 0: #有编辑历史则继续
+        editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
+        reflist = []
+        for num in range(1,editpage_nos+1):
+            histo_url = editurl + '#page' + str(num)
+            edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
+            browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
+            browser.switch_to.window(browser.window_handles[-1]) #切换窗口
+            time.sleep(1.5)
+            #一直等待到元素可见
+            wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'td')))
+            lst = get_elements(browser, By.TAG_NAME, 'td')
+            #lst = [td.text for td in versions]
+            browser.close() #关闭当前的编辑历史标签页
+            browser.switch_to.window(original_window) #回到原初的百科页面
+            for j in range(0,int(len(lst)/4)):
+                #编辑历史写入sql
+                version_values = (index + 1, event_id, eventname, year, entryname, editcount, 25*(num-1)+j+1, lst[4*j+1], 
+                                  lst[4*j], datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                c.execute(''' INSERT INTO edithistory VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', version_values)
+                conn.commit()
         
-    # if int(editcount) > 0: #有编辑历史则继续
-    #     editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
-    #     for num in range(1,editpage_nos+1):
-    #         histo_url = editurl + '#page' + str(num)
-    #         edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
-    #         browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
-    #         browser.switch_to.window(browser.window_handles[-1]) #切换窗口
-    #         time.sleep(2)
-    #         #一直等待到元素可见
-    #         wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'tr')))
-    #         versions = browser.find_elements(By.TAG_NAME, 'tr')
+    if int(editcount) > 0: #有编辑历史则继续
+        editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
+        for num in range(1,editpage_nos+1):
+            histo_url = editurl + '#page' + str(num)
+            edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
+            browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
+            browser.switch_to.window(browser.window_handles[-1]) #切换窗口
+            time.sleep(2)
+            #一直等待到元素可见
+            wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'tr')))
+            versions = browser.find_elements(By.TAG_NAME, 'tr')
             
-    #         for m, version in enumerate(versions[1:], start = 1):
-    #             submit_time = get_elements(version, 'submitTime').text
-    #             contri_card = get_elements(version, 'uname')
-    #             contributor_name = contri_card.text
-    #             contributor_id = contri_card.get_attribute('data-uid')
-    #             #编辑历史写入sql
-    #             version_values = (index + 46, eventname, year, entryname, editcount, 25*(num-1)+m, contributor_name, contributor_id, 
-    #                               submit_time, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))         
-    #             c.execute(''' INSERT INTO edithistory VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', version_values)
-    #             conn.commit()
-    #         browser.close() #关闭当前的编辑历史标签页
-    #         browser.switch_to.window(original_window) #回到原初的百科页面
-    # print('编辑历史表单done')
+            for m, version in enumerate(versions[1:], start = 1):
+                submit_time = get_elements(version, 'submitTime').text
+                contri_card = get_elements(version, 'uname')
+                contributor_name = contri_card.text
+                contributor_id = contri_card.get_attribute('data-uid')
+                #编辑历史写入sql
+                version_values = (index + 46, eventname, year, entryname, editcount, 25*(num-1)+m, contributor_name, contributor_id, 
+                                  submit_time, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))         
+                c.execute(''' INSERT INTO edithistory VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', version_values)
+                conn.commit()
+            browser.close() #关闭当前的编辑历史标签页
+            browser.switch_to.window(original_window) #回到原初的百科页面
+    print('编辑历史表单done')
     
 #%%相关类目表单
     reboxes= browser.find_elements(By.CSS_SELECTOR,'div.rslazy.rs-container')
