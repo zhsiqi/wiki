@@ -12,13 +12,14 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import os
 
-os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间')
+os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/2023-03-10')
 plt.rc('font',family='Times New Roman')
 
 from IPython.display import set_matplotlib_formats
 set_matplotlib_formats('retina') #提高行内plot显示清晰度
 
-df = pd.read_excel('events+timestamp+evtype+range+event.xlsx',index_col=0)
+#df = pd.read_excel('events+timestamp+evtype+range+event.xlsx',index_col=0)
+df = pd.read_excel('final_events.xlsx',index_col=0)
 
 #又是历久弥新的时间格式转换
 df.start_cl = pd.to_datetime(df['start_cl'])
@@ -31,7 +32,8 @@ df.create_range = pd.NaT
 #2023-02-13按事件找到最早的词条编辑时间
 
 #取出正经的当年事件的事件词条
-df1 = df[pd.isna(df['notforyearevent'])]
+#df1 = df[pd.isna(df['notforyearevent'])]
+df1 = df
 
 #按事件找到词条的最早创建时间:按事件groupby/透视的行
 evgroup= df1.groupby('event_id')
@@ -307,7 +309,7 @@ for name, group in entrygr:
     print(name)
 
 
-#%% 参考资料的引用速度 2023-02-18
+#%% 参考资料的引用速度 2023-02-18 2023-03-10
 import pandas as pd
 import numpy as np
 import os
@@ -324,10 +326,6 @@ set_matplotlib_formats('retina')
 
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0217')
 dfc = pd.read_csv('ci初稿.csv')
-evci = dfc.groupby('entry').describe()
-
-allcides = evci['reference_count'].describe()
-allcides.to_excel('allci_des.xlsx',index=True)
 
 #又是历久弥新的时间格式转换
 dfc.cite_time = dfc['cite_time'].replace(regex =['日期2020-6-6'], value = '2020-06-06')
@@ -335,6 +333,32 @@ dfc.pub_time = pd.to_datetime(dfc['pub_time'])
 dfc.cite_time = pd.to_datetime(dfc['cite_time'])
 dfc.one_citime = pd.to_datetime(dfc['one_citime'])
 dfc.finestamp = pd.to_datetime(dfc['finestamp'])
+
+evgroup= dfc.groupby('entry')
+mina = evgroup.min()
+mina1=mina.reset_index()
+maxa = evgroup.max()
+maxa1=maxa.reset_index()
+
+
+dfm = pd.merge(mina1,maxa1[['entry','cite_time']],'left', on=['entry'])
+
+dfm['cite_range_y'] = dfm['cite_time_y']-dfm['cite_time_x']
+dfm['cite_range_y'] = dfm['cite_range_y'] / np.timedelta64(1, 'Y')
+
+
+dftype = df[['entry','type']]
+dfm = pd.merge(dfm,dftype,'left', on=['entry'])
+
+dfm.to_excel('cite_range_type_des.xlsx',index=True)
+
+
+evci = dfc.groupby('entry').describe()
+
+allcides = evci['reference_count'].describe()
+allcides.to_excel('allci_des.xlsx',index=True)
+
+
 
 
 dfc.time_di = pd.NaT
