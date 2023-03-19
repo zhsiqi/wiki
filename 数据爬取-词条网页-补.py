@@ -40,36 +40,41 @@ evtable = pd.read_excel('/Users/zhangsiqi/Documents/毕业论文数据/专门输
 evtable1 = evtable[251:]
 entryall = evtable['entry'].unique().tolist()
 
+
 # 创建sql数据库
 #sqname = 'BaiduWiki['+ datetime.datetime.now().strftime('%m-%d-%H:%M].sqlite')
 os.chdir('/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0214补充词条数据')
 conn= sqlite.connect("/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0319/Wiki+1.sqlite")
 c = conn.cursor()
 
-#合并新加的history
-dfediadd = pd.read_sql('SELECT * FROM test_add_his', conn)
-dfediadd1 = pd.read_sql('SELECT * FROM test_add_his1', conn)
-dfediadd2 = pd.read_sql('SELECT * FROM test_add_his2', conn)
-dfediadd3 = pd.read_sql('SELECT * FROM test_add_his3', conn)
-dfediadd4 = pd.read_sql('SELECT * FROM test_add_his4', conn)
-dfediadd5 = pd.read_sql('SELECT * FROM test_add_his5', conn)
-dfediadd6 = pd.read_sql('SELECT * FROM test_add_his6', conn)
-dfediadd7 = pd.read_sql('SELECT * FROM test_add_his7', conn)
-dfediadd8 = pd.read_sql('SELECT * FROM test_add_his8', conn)
-dfediadd9 = pd.read_sql('SELECT * FROM test_add_his9', conn)
-dfediadd10 = pd.read_sql('SELECT * FROM test_add_his10', conn)
+# #合并新加的history
+# dfediadd = pd.read_sql('SELECT * FROM test_add_his', conn)
+# dfediadd1 = pd.read_sql('SELECT * FROM test_add_his1', conn)
+# dfediadd2 = pd.read_sql('SELECT * FROM test_add_his2', conn)
+# dfediadd3 = pd.read_sql('SELECT * FROM test_add_his3', conn)
+# dfediadd4 = pd.read_sql('SELECT * FROM test_add_his4', conn)
+# dfediadd5 = pd.read_sql('SELECT * FROM test_add_his5', conn)
+# dfediadd6 = pd.read_sql('SELECT * FROM test_add_his6', conn)
+# dfediadd7 = pd.read_sql('SELECT * FROM test_add_his7', conn)
+# dfediadd8 = pd.read_sql('SELECT * FROM test_add_his8', conn)
+# dfediadd9 = pd.read_sql('SELECT * FROM test_add_his9', conn)
+# dfediadd10 = pd.read_sql('SELECT * FROM test_add_his10', conn)
 
-dfediadd_all = pd.concat([dfediadd,dfediadd1,dfediadd2,dfediadd3,dfediadd4,dfediadd5,dfediadd6,dfediadd7,dfediadd8,dfediadd9,dfediadd10])
+# dfediadd_all = pd.concat([dfediadd,dfediadd1,dfediadd2,dfediadd3,dfediadd4,dfediadd5,dfediadd6,dfediadd7,dfediadd8,dfediadd9,dfediadd10])
 
-#14955条 14955+2773=17728
-for index, row in dfediadd_all.iterrows():
-    hist_row_values = (row['entry'], row['edit_entryindex'], row['author_name'], row['update_time'],row['edit_time'])
-    c.execute(''' INSERT INTO edit_time (entry, edit_entryindex, author_name, update_time, edit_time) VALUES (?, ?, ?, ?, ?)''', hist_row_values)
-    conn.commit()
+# #14955条 14955+2773=17728
+# for index, row in dfediadd_all.iterrows():
+#     hist_row_values = (row['entry'], row['edit_entryindex'], row['author_name'], row['update_time'],row['edit_time'])
+#     c.execute(''' INSERT INTO edit_time (entry, edit_entryindex, author_name, update_time, edit_time) VALUES (?, ?, ?, ?, ?)''', hist_row_values)
+#     conn.commit()
 
 
 dfedi = pd.read_sql('SELECT * FROM edit_time', conn)
 dfedi_ev = dfedi['entry'].unique().tolist()
+
+dfev = pd.read_sql('SELECT * FROM events', conn)
+dfev_ev = dfev['entry'].unique().tolist()
+
 
 #%%% 参考资料表单
 # c.execute('''ALTER TABLE ci ADD COLUMN type''') #新增type字段
@@ -131,7 +136,7 @@ def click_elements(driver, method, name):
 #%% 爬虫循环开始
 browser = webdriver.Chrome(executable_path = 'chromedriver')
 
-#%% 事件表单第一部分
+#%%% 事件表单第一部分
 #根据词条网址获取网页内容
 #for index, row in evtable.iterrows():
 for index, row in evtable1.iterrows():
@@ -149,7 +154,7 @@ for index, row in evtable1.iterrows():
     filename = entryname + ".html"  # 保存的文件名
     # if path.exists(filename):  # 检查文件是否存在，若存在就跳过(避免重复文件)
     #     continue
-    if entryname in entryall:#如果sqlite的数据出现在eatable中，则跳过
+    if entryname in dfev_ev:#如果sqlite的数据出现在eatable中，则跳过
         continue
     if entryname in dfedi_ev: #如果该词条已经收录在sqlite的编辑历史数据表中，则跳过
         continue
@@ -180,7 +185,7 @@ for index, row in evtable1.iterrows():
     tocs_li = [toc.text for toc in tocs if toc.text]
     tocstext = '\n'.join(tocs_li)
     
-#%% 突出贡献表单
+#%%% 突出贡献表单
     topeditors = browser.find_elements(By.CSS_SELECTOR,'div.side-content > dl > dd.description.excellent-description > ul > li')
     if topeditors:
         for editor in topeditors:
@@ -197,7 +202,7 @@ for index, row in evtable1.iterrows():
             conn.commit()
     print('突出贡献表单done')
         
-#%% 文字内容表单
+#%%% 文字内容表单
     #paras = browser.find_elements(By.CSS_SELECTOR,'div.para')
     # titles = browser.find_elements(By.XPATH,'//*[@class="title-text"]') #这个是所有的次级标题，但是多了两个【分享你的世界】
     # for title in titles:
@@ -228,7 +233,7 @@ for index, row in evtable1.iterrows():
     
     print('文字内容表单done')
     
-#%%百科内链表单
+#%%% 百科内链表单
     table_links = browser.find_elements(By.CSS_SELECTOR, 'a[target="_blank"][href^="/item/"][data-log="info"]')
     summ_links = browser.find_elements(By.CSS_SELECTOR, 'a[target="_blank"][href^="/item/"][data-log="summary"]')
     body_links = browser.find_elements(By.CSS_SELECTOR, 'a[target="_blank"][href^="/item/"][data-log="text"]')
@@ -246,7 +251,7 @@ for index, row in evtable1.iterrows():
         conn.commit()
         
     print('百科内链表单done')
-#%%参考资料表单    
+#%%% 参考资料表单    
     read_more_btn = browser.find_elements(By.CSS_SELECTOR,'dd.toggle > span.text.expand-text')#展开更多参考资料
     if read_more_btn:
         read_more_btn[0].click()
@@ -319,28 +324,28 @@ for index, row in evtable1.iterrows():
             conn.commit()
     print('参考资料表单done')
     
-#%%编辑历史表单
-    # if int(editcount) > 0: #有编辑历史则继续
-    #     editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
-    #     reflist = []
-    #     for num in range(1,editpage_nos+1):
-    #         histo_url = editurl + '#page' + str(num)
-    #         edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
-    #         browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
-    #         browser.switch_to.window(browser.window_handles[-1]) #切换窗口
-    #         time.sleep(1.5)
-    #         #一直等待到元素可见
-    #         wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'td')))
-    #         lst = get_elements(browser, By.TAG_NAME, 'td')
-    #         #lst = [td.text for td in versions]
-    #         browser.close() #关闭当前的编辑历史标签页
-    #         browser.switch_to.window(original_window) #回到原初的百科页面
-    #         for j in range(0,int(len(lst)/4)):
-    #             #编辑历史写入sql
-    #             version_values = (index + 1, event_id, eventname, year, entryname, editcount, 25*(num-1)+j+1, lst[4*j+1], 
-    #                               lst[4*j], datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    #             c.execute(''' INSERT INTO edithistory VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', version_values)
-    #             conn.commit()
+#%%% 编辑历史表单
+    if int(editcount) > 0: #有编辑历史则继续
+        editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
+        reflist = []
+        for num in range(1,editpage_nos+1):
+            histo_url = editurl + '#page' + str(num)
+            edit_jsscript = '''window.open("'''+ histo_url + '''", 'new_window')''' 
+            browser.execute_script(edit_jsscript) #打开新标签页，进入编辑历史的网页
+            browser.switch_to.window(browser.window_handles[-1]) #切换窗口
+            time.sleep(1.5)
+            #一直等待到元素可见
+            wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.TAG_NAME, 'td')))
+            lst = get_elements(browser, By.TAG_NAME, 'td')
+            #lst = [td.text for td in versions]
+            browser.close() #关闭当前的编辑历史标签页
+            browser.switch_to.window(original_window) #回到原初的百科页面
+            for j in range(0,int(len(lst)/4)):
+                #编辑历史写入sql
+                version_values = (index + 1, event_id, eventname, year, entryname, editcount, 25*(num-1)+j+1, lst[4*j+1], 
+                                  lst[4*j], datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                c.execute(''' INSERT INTO edithistory VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ''', version_values)
+                conn.commit()
         
     # if int(editcount) > 0: #有编辑历史则继续
     #     editpage_nos = math.ceil(int(editcount)/25) #通过向上取整确定编辑历史的页面数量
@@ -366,9 +371,9 @@ for index, row in evtable1.iterrows():
     #             conn.commit()
     #         browser.close() #关闭当前的编辑历史标签页
     #         browser.switch_to.window(original_window) #回到原初的百科页面
-    # print('编辑历史表单done')
+    print('编辑历史表单done')
     
-#%%相关类目表单
+#%%% 相关类目表单
     reboxes= browser.find_elements(By.CSS_SELECTOR,'div.rslazy.rs-container')
     if reboxes:
         relevance = 1
@@ -394,7 +399,7 @@ for index, row in evtable1.iterrows():
          relevance = 0
     print('相关类目表单done')
     
-#%%学术论文表单
+#%%% 学术论文表单
     sciences= browser.find_elements(By.CSS_SELECTOR,'li.sciencePaper-item')
     if sciences:
         for sci_index, sci in enumerate(sciences, start = 1):
@@ -430,7 +435,7 @@ for index, row in evtable1.iterrows():
             conn.commit()
     print('学术论文表单done')
     
-#%%事件表单2
+#%%% 事件表单2
     event_values = (index + 1, event_id, eventname, year, entryname, line, viewcount, votecount, len(topeditors), editcount, editurl, 
               toc1text, len(toc1s_li), tocstext, len(references), content_sum, contents, len(wiki_links), 
               len(sciences), relevance, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
@@ -457,19 +462,19 @@ for index, row in evtable1.iterrows():
 browser.quit()
 
 #%%将sqlite表单写入多张csv
-def sql2csv(table_name, sqldb):
-    table = pd.read_sql_query('SELECT * FROM '+ table_name, sqldb)
-    table.index += 1
-    table.to_csv(table_name + datetime.datetime.now().strftime('%m-%d-%H-%M') +'sql.csv', index=True)
+# def sql2csv(table_name, sqldb):
+#     table = pd.read_sql_query('SELECT * FROM '+ table_name, sqldb)
+#     table.index += 1
+#     table.to_csv(table_name + datetime.datetime.now().strftime('%m-%d-%H-%M') +'sql.csv', index=True)
 
-sql2csv('events',conn)
-sql2csv('ci',conn)
-sql2csv('edithistory',conn)
-sql2csv('wikilink',conn)
-sql2csv('topeditor',conn)
-sql2csv('wikitext',conn)
-sql2csv('science',conn)
-#sql2csv('relevance',conn)
+# sql2csv('events',conn)
+# sql2csv('ci',conn)
+# sql2csv('edithistory',conn)
+# sql2csv('wikilink',conn)
+# sql2csv('topeditor',conn)
+# sql2csv('wikitext',conn)
+# sql2csv('science',conn)
+# #sql2csv('relevance',conn)
 
 c.close()
 conn.close() #关闭sql
