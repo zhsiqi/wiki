@@ -45,56 +45,57 @@ import os
 #os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0210补充事件时间')
 
 #%% 读取、创建数据库等
-evtable = pd.read_excel('/Users/zhangsiqi/Downloads/events+timestamp+evtype+range.xlsx')
+evtable = pd.read_excel('/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0210补充事件时间/events+timestamp+evtype+range.xlsx')
 entryall = evtable['entry'].unique()
 
 # 创建sql数据库
 #sqname = 'BaiduWiki['+ datetime.datetime.now().strftime('%m-%d-%H:%M].sqlite')
-os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据')
-conn= sqlite.connect("/Users/zhangsiqi/Downloads/Wiki+1.sqlite")
+os.chdir('/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0214补充词条数据')
+conn= sqlite.connect("/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0319/Wiki+1.sqlite")
 c = conn.cursor()
 
 
 dfev = pd.read_sql('SELECT * FROM events', conn)
-#去除dfev重复项
-dfevdup = dfev[dfev.duplicated(['entry'])==True]
-dfev = dfev[dfev.duplicated(['entry'])==False]
+
+# #去除dfev重复项
+# dfevdup = dfev[dfev.duplicated(['entry'])==True]
+# dfev = dfev[dfev.duplicated(['entry'])==False]
 
 dfedi = pd.read_sql('SELECT * FROM edit_time', conn)
 dfedi_ev = dfedi['entry'].unique().tolist()
 
-dfediadd = pd.read_sql('SELECT * FROM test_add_his', conn)
-dfediadd_ev = dfediadd['entry'].unique().tolist()
+dfediadd11 = pd.read_sql('SELECT * FROM test_add_his11', conn)
+dfediadd11_ev = dfediadd11['entry'].unique().tolist()
 
-dfediadd1 = pd.read_sql('SELECT * FROM test_add_his1', conn)
-dfediadd1_ev = dfediadd1['entry'].unique().tolist()
+# dfediadd1 = pd.read_sql('SELECT * FROM test_add_his1', conn)
+# dfediadd1_ev = dfediadd1['entry'].unique().tolist()
 
-dfediadd2 = pd.read_sql('SELECT * FROM test_add_his2', conn)
-dfediadd2_ev = dfediadd2['entry'].unique().tolist()
+# dfediadd2 = pd.read_sql('SELECT * FROM test_add_his2', conn)
+# dfediadd2_ev = dfediadd2['entry'].unique().tolist()
 
-dfediadd3 = pd.read_sql('SELECT * FROM test_add_his3', conn)
-dfediadd3_ev = dfediadd3['entry'].unique().tolist()
+# dfediadd3 = pd.read_sql('SELECT * FROM test_add_his3', conn)
+# dfediadd3_ev = dfediadd3['entry'].unique().tolist()
 
-dfediadd4 = pd.read_sql('SELECT * FROM test_add_his4', conn)
-dfediadd4_ev = dfediadd4['entry'].unique().tolist()
+# dfediadd4 = pd.read_sql('SELECT * FROM test_add_his4', conn)
+# dfediadd4_ev = dfediadd4['entry'].unique().tolist()
 
-dfediadd5 = pd.read_sql('SELECT * FROM test_add_his5', conn)
-dfediadd5_ev = dfediadd5['entry'].unique().tolist()
+# dfediadd5 = pd.read_sql('SELECT * FROM test_add_his5', conn)
+# dfediadd5_ev = dfediadd5['entry'].unique().tolist()
 
-dfediadd6 = pd.read_sql('SELECT * FROM test_add_his6', conn)
-dfediadd6_ev = dfediadd6['entry'].unique().tolist()
+# dfediadd6 = pd.read_sql('SELECT * FROM test_add_his6', conn)
+# dfediadd6_ev = dfediadd6['entry'].unique().tolist()
 
-dfediadd7 = pd.read_sql('SELECT * FROM test_add_his7', conn)
-dfediadd7_ev = dfediadd7['entry'].unique().tolist()
+# dfediadd7 = pd.read_sql('SELECT * FROM test_add_his7', conn)
+# dfediadd7_ev = dfediadd7['entry'].unique().tolist()
 
-dfediadd8 = pd.read_sql('SELECT * FROM test_add_his8', conn)
-dfediadd8_ev = dfediadd8['entry'].unique().tolist()
+# dfediadd8 = pd.read_sql('SELECT * FROM test_add_his8', conn)
+# dfediadd8_ev = dfediadd8['entry'].unique().tolist()
 
-dfediadd9 = pd.read_sql('SELECT * FROM test_add_his9', conn)
-dfediadd9_ev = dfediadd9['entry'].unique().tolist()
+# dfediadd9 = pd.read_sql('SELECT * FROM test_add_his9', conn)
+# dfediadd9_ev = dfediadd9['entry'].unique().tolist()
 
-dfediadd10 = pd.read_sql('SELECT * FROM test_add_his10', conn)
-dfediadd10_ev = dfediadd10['entry'].unique().tolist()
+# dfediadd10 = pd.read_sql('SELECT * FROM test_add_his10', conn)
+# dfediadd10_ev = dfediadd10['entry'].unique().tolist()
 
 #evtableadd = evtable[['event_id','event','year','entry','baikelink','start_cl_scale','start_cl','edi_start','docu_start','edi_end','type','pre_event']]
 #evtableadd = evtable[['event_id','event','year','entry','baikelink','no_entry_merge','nev_entry','uncovertime','start_cl_scale','start_cl','edi_start','docu_start','edi_end','type','pre_event']]
@@ -102,10 +103,11 @@ dfediadd10_ev = dfediadd10['entry'].unique().tolist()
 evtableadd = evtable[['event_id','event','year','entry','baikelink','no_entry_merge','nev_entry','uncovertime','start_cl_scale','start_cl','edi_start','docu_start','edi_end','type','pre_event']]
 #dfevadd = dfev[['event_id','event','year','entry','baikelink']
 dfev.drop(columns=['entryindex','index','year','baikelink','event_id','start_time','end_time','uncovertime','once','start_cl','edi_start','edi_end','edi_range','create_range','type','antici'],inplace=True)
+#这里一定要 drop年份
 
-dfm = pd.merge(evtableadd, dfev, how='left', on=['entry','event'])
+dfm = pd.merge(evtableadd, dfev, how='left', on=['entry'])
 
-dfm.to_sql('final_events_0319', conn, index=True, if_exists = 'replace')
+dfm.to_sql('final_events_0320_1', conn, index=True, if_exists = 'replace')
 
 
 
@@ -140,7 +142,7 @@ for index, row in dfm.iterrows():
     line = row['baikelink']
     # print('line',line.strip())
     year = row['year']
-    eventname = row['event']
+    eventname = row['event_x']
     event_id = row['event_id']
     entryname = row['entry']
     editcount = row['editcount']
@@ -149,30 +151,30 @@ for index, row in dfm.iterrows():
 
     if entryname in dfedi_ev: #如果该词条已经收录在sqlite的编辑历史数据表中，则跳过
         continue
-    if entryname in dfediadd_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    if entryname in dfediadd11_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
         continue
-    if entryname in dfediadd1_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd2_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd3_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd4_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd5_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd6_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd7_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd8_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd9_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname in dfediadd10_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
-    if entryname =='马龙': #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-        continue
+    # if entryname in dfediadd1_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd2_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd3_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd4_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd5_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd6_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd7_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd8_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd9_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname in dfediadd10_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
+    # if entryname =='马龙': #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+    #     continue
     
 
     #browser.get(line.strip()) #selenium获取网页
@@ -238,7 +240,7 @@ for index, row in dfm.iterrows():
 browser.quit()
 
 dfall_new.index += 1
-dfall_new.to_sql('test_add_his11', conn, index=True, if_exists = 'replace')
+dfall_new.to_sql('test_add_his_2022covidpart', conn, index=True, if_exists = 'replace')
 conn.close()
 
 #%%将sqlite表单写入多张csv
