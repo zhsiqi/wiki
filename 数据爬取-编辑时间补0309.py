@@ -64,11 +64,11 @@ dfev = pd.read_sql('SELECT * FROM events', conn)
 dfedi = pd.read_sql('SELECT * FROM edit_time', conn)
 dfedi_ev = dfedi['entry'].unique().tolist()
 
-dfediadd11 = pd.read_sql('SELECT * FROM test_add_his11', conn)
+dfediadd11 = pd.read_sql('SELECT * FROM test_add_his1', conn)
 dfediadd11_ev = dfediadd11['entry'].unique().tolist()
 
-# dfediadd1 = pd.read_sql('SELECT * FROM test_add_his1', conn)
-# dfediadd1_ev = dfediadd1['entry'].unique().tolist()
+dfediadd1 = pd.read_sql('SELECT * FROM test_add_his_2022covidpart', conn)
+dfediadd1_ev = dfediadd1['entry'].unique().tolist()
 
 # dfediadd2 = pd.read_sql('SELECT * FROM test_add_his2', conn)
 # dfediadd2_ev = dfediadd2['entry'].unique().tolist()
@@ -153,8 +153,8 @@ for index, row in dfm.iterrows():
         continue
     if entryname in dfediadd11_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
         continue
-    # if entryname in dfediadd1_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
-    #     continue
+    if entryname in dfediadd1_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
+        continue
     # if entryname in dfediadd2_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
     #     continue
     # if entryname in dfediadd3_ev: #如果该词条已经收录在sqlite的补充编辑历史数据表中，则跳过
@@ -204,7 +204,7 @@ for index, row in dfm.iterrows():
             for blockchain in blockchains:
                 blockchain.click()
                 time.sleep(3.5) #这个停顿一定需要，否则页面没有更新，定位元素会找不到
-                # wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,'ul.hash-info > li:nth-child(3)')))
+                wait = WebDriverWait(browser, 20, 0.5).until(EC.presence_of_element_located((By.CSS_SELECTOR,'body > dl.wgt_dialog.modal.blockChain-dialog > dd.con.no-icon.no-sub-msg > div:nth-child(1) > ul > li:nth-child(3)')))
                 real_timeli = get_elements(browser, By.CSS_SELECTOR, 'body > dl.wgt_dialog.modal.blockChain-dialog > dd.con.no-icon.no-sub-msg > div:nth-child(1) > ul > li:nth-child(3)')
                 
                 if real_timeli:
@@ -240,7 +240,7 @@ for index, row in dfm.iterrows():
 browser.quit()
 
 dfall_new.index += 1
-dfall_new.to_sql('test_add_his_2022covidpart', conn, index=True, if_exists = 'replace')
+dfall_new.to_sql('test_add_his_2', conn, index=True, if_exists = 'replace')
 conn.close()
 
 #%%将sqlite表单写入多张csv
