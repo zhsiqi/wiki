@@ -37,7 +37,7 @@ os.chdir('/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/02
 
 #%% 读取、创建数据库等
 evtable = pd.read_excel('/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0210补充事件时间/events+timestamp+evtype+range.xlsx')
-evtable1 = evtable[251:]
+evtable1 = evtable
 entryall = evtable['entry'].unique().tolist()
 
 
