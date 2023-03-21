@@ -20,19 +20,22 @@ import sqlite3 as sqlite
 # （1）找到链接是空的行
 # （2）使用webdriver获取原始链接和状态码，这个状态码可能有错
 
-df = pd.read_csv('ci02-14-14-25sql.csv')
+conn = sqlite.connect('/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0319/Wiki+1.sqlite')
+c = conn.cursor()
+df = pd.read_sql('SELECT * FROM ci', conn)
+
+#df = pd.read_csv('ci02-14-14-25sql.csv')
 #df['status_collect_time'] = 'NA' #添加列记录时间
-df['status_code'] = df['status_code'].astype(str) #把变量变为字符串类型
+#df['status_code'] = df['status_code'].astype(str) #把变量变为字符串类型
 print(df.dtypes)
 
 driver = webdriver.Chrome('chromedriver')
 
 for index, row in df.iterrows():
     oriurl = row['origin_url']
+    badurl = row['original_url']
     line = row['redir_url']
-    
-    if pd.isna(oriurl) and pd.isna(line)==False: #需要补充原始链接的行：判断原始链接为空的行，且redirlink不为空
-        
+    if pd.isna(oriurl) and pd.isna(badurl) and pd.isna(line)==False: #需要补充原始链接的行：判断原始链接为空的行，且redirlink不为空
         try:
             driver.set_page_load_timeout(15)
             driver.set_script_timeout(15)#这两种设置都进行才有效
@@ -63,7 +66,7 @@ for index, row in df.iterrows():
 driver.quit()
 df.to_csv('ci+原始链接补15s.csv',index=True)
 
-conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite')
+# conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite')
 df.to_sql('ci+15s', conn, index=True)
 conn.close()
 
@@ -118,7 +121,7 @@ driver.quit()
 
 df.to_csv('ci+100s.csv',index=False)
 
-conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite')
+# conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite')
 df.to_sql('ci+100s', conn, index=False)
 conn.close()
 
@@ -127,7 +130,7 @@ print('后面需要处理的超时链接个数为', over_count)
 
 df.loc[pd.isna(df['origin_url']) & pd.notna(df['redir_url']),'origin_url']=df['original_url']
 
-conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite')
+# conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite')
 df.to_sql('ci', conn, index=False, if_exists='replace')
 conn.close()
 

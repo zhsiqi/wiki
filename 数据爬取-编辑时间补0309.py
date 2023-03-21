@@ -103,7 +103,7 @@ dfediadd1_ev = dfediadd1['entry'].unique().tolist()
 evtableadd = evtable[['event_id','event','year','entry','baikelink','no_entry_merge','nev_entry','uncovertime','start_cl_scale','start_cl','edi_start','docu_start','edi_end','type','pre_event']]
 #dfevadd = dfev[['event_id','event','year','entry','baikelink']
 dfev.drop(columns=['entryindex','index','year','baikelink','event_id','start_time','end_time','uncovertime','once','start_cl','edi_start','edi_end','edi_range','create_range','type','antici'],inplace=True)
-#这里一定要 drop年份
+#这里一定要 drop年份 eventid
 
 dfm = pd.merge(evtableadd, dfev, how='left', on=['entry'])
 

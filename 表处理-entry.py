@@ -4,6 +4,7 @@
 Created on Sun Mar 19 19:24:36 2023
 
 @author: zhangsiqi
+在重新收集新增词条的数据之前去重
 """
 
 from os import path
@@ -39,8 +40,6 @@ dfev = pd.read_sql('SELECT * FROM events', conn)
 dfev_ev = dfev['entry'].unique().tolist()
 
 #去除重复
-
-
 c.execute('DELETE FROM events WHERE events.rowid NOT IN (SELECT min(events.rowid) FROM events GROUP BY entry);')
 
 #========删除多余词条的数据================
