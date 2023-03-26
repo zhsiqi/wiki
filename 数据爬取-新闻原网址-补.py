@@ -37,14 +37,14 @@ for index, row in df.iterrows():
     line = row['redir_url']
     if pd.isna(oriurl) and pd.isna(badurl) and pd.isna(line)==False: #需要补充原始链接的行：判断原始链接为空的行，且redirlink不为空
         try:
-            driver.set_page_load_timeout(15)
-            driver.set_script_timeout(15)#这两种设置都进行才有效
+            driver.set_page_load_timeout(300)
+            driver.set_script_timeout(300)#这两种设置都进行才有效
             jssc = '''window.open("'''+ line.strip() + '''", 'new_window')'''
             driver.execute_script(jssc)
             driver.switch_to.window(driver.window_handles[-1])
             link = driver.current_url
         except TimeoutException:
-            df.at[index, 'original_url'] = '15s超时'
+            df.at[index, 'original_url'] = '超时'
             #df.at[index, 'status_collect_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             print(index, '15s超时')
         except UnexpectedAlertPresentException:
@@ -53,7 +53,7 @@ for index, row in df.iterrows():
             #df.at[index, 'status_collect_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             print(index, '弹窗错误', link)
         except WebDriverException:
-            df.at[index, 'original_url'] = 'driver错误'
+            df.at[index, 'original_url'] = '错误'
             #df.at[index, 'status_collect_time'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             print(index, 'driver错误')
         else:
@@ -64,13 +64,14 @@ for index, row in df.iterrows():
         driver.switch_to.window(driver.window_handles[-1])
     
 driver.quit()
-df.to_csv('ci+原始链接补15s.csv',index=True)
+#df.to_csv('ci+原始链接补15s.csv',index=True)
 
 # conn = sqlite.connect('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/Wiki+1.sqlite')
-df.to_sql('ci+15s', conn, index=False, if_exists = 'replace')
+df.loc[pd.isna(df['origin_url']) & pd.notna(df['redir_url']),'origin_url']=df['original_url']
+df.to_sql('ci+add+ori', conn, index=False, if_exists = 'replace')
 conn.close()
 
-over_count = ((df['original_url'] == '15s超时')|(df['original_url'] == 'driver错误')).sum()
+over_count = ((df['original_url'] == '超时')|(df['original_url'] == '错误')).sum()
 print('后面需要处理的超时等链接个数为', over_count)
 
 #%%200s为限获取链接
