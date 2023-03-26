@@ -156,8 +156,8 @@ for index, row in evtable1.iterrows():
     #     continue
     if entryname in dfev_ev:#如果sqlite的数据出现在eatable中，则跳过
         continue
-    if entryname in dfedi_ev: #如果该词条已经收录在sqlite的编辑历史数据表中，则跳过
-        continue
+    # if entryname in dfedi_ev: #如果该词条已经收录在sqlite的编辑历史数据表中，则跳过
+    #     continue
     
     print('事件', len(evtable),'-', index + 1, entryname)
 
@@ -436,15 +436,15 @@ for index, row in evtable1.iterrows():
     print('学术论文表单done')
     
 #%%% 事件表单2
-    event_values = (index + 1, event_id, eventname, year, entryname, line, viewcount, votecount, len(topeditors), editcount, editurl, 
+    event_values = (event_id, eventname, year, entryname, line, viewcount, votecount, len(topeditors), editcount, editurl, 
               toc1text, len(toc1s_li), tocstext, len(references), content_sum, contents, len(wiki_links), 
               len(sciences), relevance, datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-    c.execute(''' INSERT INTO events (entryindex, event_id, event, year, entry, 
+    c.execute(''' INSERT INTO events (event_id, event, year, entry, 
               baikelink, viewcount, votecount, 
       topeditor_count, editcount, editurl,
       toc_level1, toclevel1_count, tocs, reference_count,
       summary, para_content, link_count, sci_paper_count, 
-      relevant, collect_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', event_values)
+      relevant, collect_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', event_values)
               
     conn.commit()      
     print('事件表单done')
