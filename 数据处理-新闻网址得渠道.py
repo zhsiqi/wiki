@@ -25,6 +25,7 @@ os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/
 
 df = pd.read_csv('citation.csv', index_col='Unnamed: 0')
 
+
 #%% 新建列聚合网页等渠道
 df['maindo'] = None
 

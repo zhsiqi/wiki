@@ -1,14 +1,24 @@
 *导入csv, utf-8编码
 import delimited year_edirange.csv, encoding(UTF-8)
 
+import excel "/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0322/year_edirange.xlsx", sheet("Sheet1") firstrow
+
+
 *年份和编辑历史跨度的相关与回归
 
 logout, save(stat_edi_pwcor) word excel replace: ///
 pwcorr year edi_range_y, sig star(0.05)
- 
+
+tab type, gen(type)
+pwcorr year type1 type2 type3 edi_range_y, sig star(0.05) 
+
+reg edi_range_y type1 type2 type3 i.year
+reg edi_range_y type1 type2 type3 year
+reg edi_range_y year
+
  
 scatter edi_range_y year
-reg edi_range_y year
+reg edi_range_y type1 type2 type3 i.year
 predict yhat, xb
 predict resid, r
 sum resid

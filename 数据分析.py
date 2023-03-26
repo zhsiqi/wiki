@@ -5,6 +5,11 @@ Created on Thu Feb  2 16:54:28 2023
 
 @author: zhangsiqi
 """
+
+
+dfci = df
+
+
 #%% 分正负数 事件类型 描述创建时间差 2023-02-15
 import pandas as pd 
 import numpy as np
@@ -12,17 +17,17 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import os
 
-os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/2023-03-10')
+#os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/2023-03-10')
 plt.rc('font',family='Times New Roman')
 
 from IPython.display import set_matplotlib_formats
 set_matplotlib_formats('retina') #提高行内plot显示清晰度
 
 #df = pd.read_excel('events+timestamp+evtype+range+event.xlsx',index_col=0)
-df = pd.read_excel('final_events.xlsx',index_col=0)
+df = pd.read_excel('/Users/zhangsiqi/Documents/毕业论文数据/专门输出数据表/0322/eventf.xlsx',index_col=0)
 
 #又是历久弥新的时间格式转换
-df.start_cl = pd.to_datetime(df['start_cl'])
+df.start_cl = pd.to_datetime(df['start_cl_scale'])
 df.edi_start = pd.to_datetime(df['edi_start'])
 df.edi_end = pd.to_datetime(df['edi_end'])
 df.docu_start = pd.to_datetime(df['docu_start'])
@@ -52,7 +57,7 @@ evgroupmin['cre_range_d'] = evgroupmin['create_range'] / np.timedelta64(1, 'D')
 
 evgroupmin.to_excel('evgroupmin.xlsx', index=True)
 
-evdata = evgroupmin[['event','year','start_cl','docu_start','cre_range_d','disaster','antici']] #这个表的索引就是event_id
+evdata = evgroupmin[['event','year','start_cl','docu_start','cre_range_d','type']] #这个表的索引就是event_id
 
 evdata.to_excel('evdata.xlsx',index=True)
 
@@ -73,7 +78,7 @@ multigr_des = pocen.groupby(multigr).describe()
 multigr_des.to_excel('posimulti_des.xlsx', index=True)
 
 necen = positive.get_group(False)['cre_range_d']
-manygr = pd.cut(necen, bins=[-3000,-1000,-100,0])
+manygr = pd.cut(necen, bins=[-3100,-1000,-100,0])
 manygr_des = necen.groupby(manygr).describe()
 manygr_des.to_excel('negmulti_des.xlsx', index=True)
 
@@ -166,18 +171,21 @@ from IPython.display import set_matplotlib_formats
 set_matplotlib_formats('retina') #提高行内plot显示清晰度
 
 dfall = pd.read_excel('events+timestamp+evtype+range.xlsx')
+dfall=df
 
 #去除拉伸开始时间的词条
-df = dfall[pd.isna(dfall['del_edi_range'])]
+df = dfall[pd.isna(dfall['del_before'])]
 
 #时间格式转换
 df.edi_start = pd.to_datetime(df['edi_start'])
 df.edi_end = pd.to_datetime(df['edi_end'])
 
 #生成变量
-df.edi_range = pd.NaT
-df.edi_range = df['edi_end'] - df['edi_start']
-df.edi_range = pd.to_timedelta(df['edi_range'])
+#df.loc[df['entry'].str.contains('新型冠状病毒肺炎'),'editcount'] = np.NaN
+df.loc[df['entry'].str.contains('全国代表大会'),'editcount'] = np.NaN
+df['edi_range'] = pd.NaT
+df['edi_range'] = df['edi_end'] - df['edi_start']
+df['edi_range'] = pd.to_timedelta(df['edi_range'])
 df['edi_range_y'] = df['edi_range'] / np.timedelta64(1, 'Y') #词条的编辑历史事件跨度：年
 df['edi_by_year'] = df['editcount']/df['edi_range_y'] #词条年均的编辑数量
 
@@ -235,6 +243,13 @@ for name, gr in grtime:
     print(gr['entry'][1:15])
 
 timegr1 = grtime.get_group('(0.0, 1.0]') #不知道为啥老报错
+
+#%%词条参考资料数量
+
+#按数值分组
+cimulti = pd.cut(df1['reference_count'], bins=[0,5,15,30,100,np.inf],include_lowest=True)
+cimultigr_des = df1['reference_count'].groupby(cimulti).describe()
+cimultigr_des.to_excel('multi_reference_count_des.xlsx', index=True)
 
 #================编辑热度动态分布 热力图===================
 dfedi = pd.read_csv('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0214补充词条数据/edithistory02-14-14-25sql.csv')
@@ -327,6 +342,9 @@ set_matplotlib_formats('retina')
 os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0217')
 dfc = pd.read_csv('ci初稿.csv')
 
+#2023-03-24
+dfc = dfci
+
 #又是历久弥新的时间格式转换
 dfc.cite_time = dfc['cite_time'].replace(regex =['日期2020-6-6'], value = '2020-06-06')
 dfc.pub_time = pd.to_datetime(dfc['pub_time'])
@@ -393,6 +411,10 @@ dfc['time_di_d'][dfc['time_di_d']<7].hist(bins=7)
 
 
 dfc.boxplot(column=('time_di_d'))
+
+#%% 来源的多样性
+
+
 
 
 #%% 还画了自己觉得很炫酷的11个编辑历史跨度的子直方图

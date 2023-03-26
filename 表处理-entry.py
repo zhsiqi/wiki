@@ -4,6 +4,7 @@
 Created on Sun Mar 19 19:24:36 2023
 
 @author: zhangsiqi
+此代码只针对events表单
 在重新收集新增词条的数据之前去重
 """
 

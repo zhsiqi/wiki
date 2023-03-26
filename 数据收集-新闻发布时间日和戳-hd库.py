@@ -18,7 +18,9 @@ import os
 from htmldate import find_date
 
 #os.chdir('/Users/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
-os.chdir('/Volumes/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
+#os.chdir('/Volumes/zhangsiqi/Desktop/毕业论文代码mini/专门输出数据表/0124补充卫健委等时间')
+
+
 
 df = pd.read_csv('citation+news-nhc-6.csv',index_col=('Unnamed: 0'))
 df['htmldate_ori'] = ''
