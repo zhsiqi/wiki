@@ -413,7 +413,10 @@ dfc['time_di_d'][dfc['time_di_d']<7].hist(bins=7)
 dfc.boxplot(column=('time_di_d'))
 
 #%% 来源的多样性
-
+time_di_mean['channel_count']
+for index, row in time_di_mean.iterrows():
+    entry = row['entry']
+    dfen = dfci['entry']
 
 
 
