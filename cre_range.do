@@ -119,5 +119,19 @@ kwallis2 cre_range_d, by(type)
 
 
 
+* 编辑者人数 与 事件类型
+
+tab type, gen(type)
+
+robvar author_count_1, by(type) 
+*显示方差是齐的
+
+*将type的文字编码改为数字编码
+gen typenum =. 
+replace typenum=1 if type=="媒介事件"
+replace typenum=2 if type=="媒介灾难"
+replace typenum=3 if type=="新闻事件"
+
+anova author_count_1 typenum
 
 
